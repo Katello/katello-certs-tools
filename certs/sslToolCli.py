@@ -93,11 +93,10 @@ def _getOptionsTree(defs):
         make_option('--set-org',      action='store', type="string", help='organization or company name, such as "Red Hat Inc." (default: %s)' % repr(defs['--set-org'])),
         make_option('--set-org-unit', action='store', type="string", help='organizational unit, such as "RHN" (default: %s)' % repr(defs['--set-org-unit'])),
         make_option('--set-email',    action='store', type="string", help='email address (default: %s)' % repr(defs['--set-email'])),
+        make_option('--set-common-name', action='store', type="string", help='common name (default: %s)' % repr(defs['--set-common-name'])),
         ]
 
-    _caConfOptions = [
-        make_option('--set-common-name', action='store', type="string", help='common name (default: %s)' % repr(defs['--set-common-name'])),
-        ] + _genConfOptions
+    _caConfOptions = _genConfOptions
 
     _serverConfOptions = [ _optSetHostname, _optSetCname ] + _genConfOptions
 
@@ -144,6 +143,7 @@ def _getOptionsTree(defs):
     # the base options
     _optGenCa = make_option('--gen-ca', action='store_true', help='generate a Certificate Authority (CA) key pair and public RPM. Review "--gen-ca --help" for more information.')
     _optGenServer = make_option("--gen-server", action='store_true', help="""generate the web server's SSL key set, RPM and tar archive. Review "--gen-server --help" for more information.""")
+    _optGenClient = make_option("--gen-client", action='store_true', help="""generate the client SSL key set, RPM and tar archive. Review "--gen-client --help" for more information.""")
 
 
     # CA build option tree set possibilities
@@ -158,23 +158,24 @@ def _getOptionsTree(defs):
       + _buildRpmOptions + [_optCaCertRpm] + _genOptions
 
     # server build option tree set possibilities
-    _serverSet = [_optGenServer] + _serverKeyOptions + _serverCertReqOptions \
+    _serverSet = [_optGenServer, _optGenClient] + _serverKeyOptions + _serverCertReqOptions \
       + _serverCertOptions + _serverConfOptions + _genOptions \
       + [_optServerKeyOnly, _optServerCertReqOnly, _optServerCertOnly] \
       + _buildRpmOptions + [_optServerRpm, _optServerTar, _optNoRpm]
-    _serverKeyOnlySet = [_optGenServer] + _serverKeyOptions \
+    _serverKeyOnlySet = [_optGenServer, _optGenClient] + _serverKeyOptions \
       + _genOptions + [_optServerKeyOnly]
-    _serverCertReqOnlySet = [_optGenServer] + _serverKeyOptions \
+    _serverCertReqOnlySet = [_optGenServer, _optGenClient] + _serverKeyOptions \
       + _serverCertReqOptions + _serverConfOptions \
       + _genOptions + [_optServerCertReqOnly]
-    _serverCertOnlySet = [_optGenServer] + _serverCertOptions \
+    _serverCertOnlySet = [_optGenServer, _optGenClient] + _serverCertOptions \
       + _genOptions + [_optServerCertOnly]
-    _serverRpmOnlySet = [_optGenServer, _optServerKey, _optServerCertReq, _optServerCert, _optSetHostname, _optSetCname ] \
+    _serverRpmOnlySet = [_optGenServer, _optGenClient, _optServerKey, _optServerCertReq, _optServerCert, _optSetHostname, _optSetCname ] \
       + _buildRpmOptions + [_optServerRpm, _optServerTar] + _genOptions
-
+     
     optionsTree = {
         '--gen-ca' : _caSet,
         '--gen-server' : _serverSet,
+        '--gen-client' : _serverSet,
         }
 
     # quick check about the --*-only options
@@ -191,20 +192,30 @@ ERROR: cannot use these options in combination:
 ERROR: cannot use these options in combination:
        %s\n""" % repr(_onlyIntersection))
         sys.exit(errnoGeneralError)
+    _onlyIntersection = setIntersection(sys.argv, ['--gen-client', '--gen-server'])
+    if len(_onlyIntersection) > 1:
+        sys.stderr.write("""\
+ERROR: cannot use these options in combination:
+       %s\n""" % repr(_onlyIntersection))
+        sys.exit(errnoGeneralError)
 
     if '--key-only' in sys.argv:
         optionsTree['--gen-ca'] = _caKeyOnlySet
         optionsTree['--gen-server'] = _serverKeyOnlySet
+        optionsTree['--gen-client'] = _serverKeyOnlySet
     elif '--cert-only' in sys.argv:
         optionsTree['--gen-ca'] = _caCertOnlySet
         optionsTree['--gen-server'] = _serverCertOnlySet
+        optionsTree['--gen-client'] = _serverCertOnlySet
     elif '--cert-req-key-only' in sys.argv:
         optionsTree['--gen-server'] = _serverCertReqOnlySet
+        optionsTree['--gen-client'] = _serverCertReqOnlySet
     elif '--rpm-only' in sys.argv:
         optionsTree['--gen-ca'] = _caRpmOnlySet
         optionsTree['--gen-server'] = _serverRpmOnlySet
+        optionsTree['--gen-client'] = _serverRpmOnlySet
 
-    baseOptions = [_optGenCa, _optGenServer]
+    baseOptions = [_optGenCa, _optGenServer, _optGenClient]
     return optionsTree, baseOptions
 
 
@@ -256,13 +267,15 @@ BASE_USAGE = """\
 
  step 2 %s --gen-server [sub-options]
 
+ step 3 %s --gen-client [sub-options]
+
 The two options listed above are "base options". For more help about
 a particular option, just add --help to either one, such as:
 %s --gen-ca --help
 
 If confused, please refer to the man page or other documentation
 for sample usage.\
-""" % tuple([_progName]*4)
+""" % tuple([_progName]*5)
 OTHER_USAGE = """\
 %s [options]
 
@@ -317,7 +330,7 @@ def optionParse():
 
     # force certain "first options". Not beautiful but it works.
     if len(sys.argv) > 1:
-        if sys.argv[1] not in ('-h', '--help', '--gen-ca', '--gen-server'):
+        if sys.argv[1] not in ('-h', '--help', '--gen-ca', '--gen-server', '--gen-client'):
             # first option was not something we understand. Force a base --help
             del(sys.argv[1:])
             sys.argv.append('--help')

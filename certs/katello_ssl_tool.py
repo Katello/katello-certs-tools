@@ -327,8 +327,6 @@ def genServerCertReq(d, verbosity=0):
     # XXX: hmm.. should private_key, etc. be set for this before the write?
     #      either that you pull the key/certs from the files all together?
     configFile = ConfigFile(server_openssl_cnf)
-    if d.has_key('--set-common-name'):
-        del d['--set-common-name']
     configFile.save(d, caYN=0, verbosity=verbosity)
 
     ## generate the server cert request
@@ -420,6 +418,8 @@ def genServerCert(password, d, verbosity=0):
     index_txt = os.path.join(d['--dir'], 'index.txt')
     serial = os.path.join(d['--dir'], 'serial')
 
+    purpose = d['--purpose']
+
     try:
         os.unlink(index_txt)
     except:
@@ -433,10 +433,11 @@ def genServerCert(password, d, verbosity=0):
     configFile = ConfigFile(ca_openssl_cnf)
     configFile.updateDir()
 
-    args = ("/usr/bin/openssl ca -extensions req_server_x509_extensions -passin pass:%s -outdir ./ -config %s "
+    args = ("/usr/bin/openssl ca -extensions req_%s_x509_extensions -passin pass:%s -outdir ./ -config %s "
             "-in %s -batch -cert %s -keyfile %s -startdate %s -days %s "
             "-md %s -out %s"
-            % ('%s', repr(cleanupAbsPath(ca_openssl_cnf)),
+            % (purpose,
+               '%s', repr(cleanupAbsPath(ca_openssl_cnf)),
                repr(cleanupAbsPath(server_cert_req)),
                repr(cleanupAbsPath(ca_cert)),
                repr(cleanupAbsPath(ca_key)), d['--startdate'],
@@ -958,7 +959,7 @@ def _main():
             if not getOption(options, 'no_rpm'):
                 genCaRpm(DEFS, options.verbose)
 
-    if getOption(options, 'gen_server'):
+    if getOption(options, 'gen_server') or getOption(options, 'gen_client'):
         if getOption(options, 'key_only'):
             genServerKey(DEFS, options.verbose)
         elif getOption(options, 'cert_req_only'):

@@ -278,8 +278,7 @@ def figureDEFS_distinguishing(options):
             'L'            : ('--set-city',),
             'O'            : ('--set-org',),
             'OU'           : ('--set-org-unit',),
-            'CN'           : ('--set-common-name', '--set-hostname'),
-            #'CN'           : ('--set-common-name',),
+            'CN'           : ('--set-common-name',),
             'emailAddress' : ('--set-email',),
               }
 
@@ -291,6 +290,11 @@ def figureDEFS_distinguishing(options):
             #print 'XXX DEFS["%s"]' % v, '=', conf[key]
 
     ## map commanline options to the DEFS object
+    if getOption(options, 'gen_server'):
+        DEFS['--purpose'] = 'server'
+    if getOption(options, 'gen_client'):
+        DEFS['--purpose'] = 'client'
+
     if getOption(options, 'set_country') is not None:
         DEFS['--set-country'] = getOption(options, 'set_country')
     if getOption(options, 'set_state') is not None:
@@ -305,6 +309,12 @@ def figureDEFS_distinguishing(options):
         DEFS['--set-common-name'] = getOption(options, 'set_common_name')
     if getOption(options, 'set_hostname') is not None:
         DEFS['--set-hostname'] = getOption(options, 'set_hostname')
+
+    if getOption(options, 'set_common_name') is not None:
+        DEFS['--set-common-name'] = getOption(options, 'set_common_name')
+    else:
+        DEFS['--set-common-name'] = DEFS['--set-hostname']
+
     if getOption(options, 'set_email') is not None:
         DEFS['--set-email'] = getOption(options, 'set_email')
     DEFS['--set-cname'] = getOption(options, 'set_cname') # this is list
@@ -379,6 +389,16 @@ nsCertType = server
 nsComment               = "Katello SSL Tool Generated Certificate"
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
+
+[ req_client_x509_extensions ]
+basicConstraints = CA:false
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+nsCertType = client
+# PKIX recommendations harmless if included in all certificates.
+nsComment               = "Katello SSL Tool Generated Certificate"
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid, issuer:always
 #===========================================================================
 """
 
@@ -402,9 +422,9 @@ req_extensions          = v3_req
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
-nsCertType = server
+nsCertType = %s
 # PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate"
+nsComment               = "Katello SSL Tool Generated Certificate, got it?"
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
@@ -691,8 +711,7 @@ serial                  = $dir/serial
                 '--set-city'        : 'L',
                 '--set-org'         : 'O',
                 '--set-org-unit'    : 'OU',
-                '--set-common-name' : 'CN', # these two will never occur at the
-                '--set-hostname'    : 'CN', # same time
+                '--set-common-name' : 'CN',
                 '--set-email'       : 'emailAddress',
                   }
 
@@ -709,7 +728,7 @@ serial                  = $dir/serial
               )
         else:
             openssl_cnf = CONF_TEMPLATE_SERVER \
-              % (gen_req_distinguished_name(rdn), gen_req_alt_names(d, rdn['CN']))
+              % (gen_req_distinguished_name(rdn), d['--purpose'],  gen_req_alt_names(d, rdn['CN']))
 
         try:
             rotated = rotateFile(filepath=self.filename,verbosity=verbosity)
