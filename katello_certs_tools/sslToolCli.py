@@ -44,9 +44,10 @@ def _getOptionsTree(defs):
         build the options tree dependent on whats on the commandline
     """
 
-    _optCAKeyPassword = make_option('-p', '--password', action='store', type="string", help='CA password')
+    _optCAKeyPassword = make_option('-p', '--password', action='store', type="string", help='CA password or password file location')
     _optCaKey = make_option('--ca-key', action='store', type="string", help='CA private key filename (default: %s)' % defs['--ca-key'])
     _optCaCert = make_option('--ca-cert', action='store', type="string", help='CA certificate filename (default: %s)' % defs['--ca-cert'])
+    _optCaCertDir = make_option('--ca-cert-dir', action='store', type="string", help='Directory to deploy CA cert and key to.')
 
     #_optServerKeyPassword = make_option('-p', '--password', action='store', type="string", help='password to generate the web server's SSL private key')
     _optCertExp = make_option('--cert-expiration', action='store', type="int", help='expiration of certificate (default: %s days)' % (int(defs['--cert-expiration'])))
@@ -54,6 +55,7 @@ def _getOptionsTree(defs):
     _optServerKey = make_option('--server-key', action='store', type="string", help="the web server's SSL private key filename (default: %s)" % defs['--server-key'])
     _optServerCertReq = make_option('--server-cert-req', action='store', type="string", help="location of the web server's SSL certificate request filename (default: %s)" % defs['--server-cert-req'])
     _optServerCert = make_option('--server-cert', action='store', type="string", help='the web server SSL certificate filename (default: %s)' % defs['--server-cert'])
+    _optServerCertDir = make_option('--server-cert-dir', action='store', type="string", help='Directory to deploy server cert and key to.')
 
     _optCaForce = make_option('-f', '--force', action='store_true', help='forcibly create a new CA SSL private key and/or public certificate')
 
@@ -105,6 +107,7 @@ def _getOptionsTree(defs):
         _optCaForce,
         _optCAKeyPassword,
         _optCaKey,
+        _optCaCertDir
         ]
 
     # CA cert generation options
@@ -113,6 +116,7 @@ def _getOptionsTree(defs):
         _optCAKeyPassword,
         _optCaKey,
         _optCaCert,
+        _optCaCertDir,
         _optCertExp,
         ] + _caConfOptions
 
@@ -127,6 +131,7 @@ def _getOptionsTree(defs):
         #_optServerKeyPassword,
         _optServerKey,
         _optServerCertReq,
+        _optServerCertDir
         ]
 
     # server cert generation options
@@ -135,8 +140,10 @@ def _getOptionsTree(defs):
         _optCaCert,
         _optCaKey,
         _optServerCertReq,
+        _optCaCertDir,
         Option('--startdate',  action='store', type="string", default=defs['--startdate'], help="start date for the web server's SSL certificate validity (format: YYMMDDHHMMSSZ - where Z is a letter; default is 1 week ago: %s)" % defs['--startdate']),
         _optServerCert,
+        _optServerCertDir,
         _optCertExp,
         ]
 
@@ -154,13 +161,13 @@ def _getOptionsTree(defs):
       + [_optCaKeyOnly]
     _caCertOnlySet = [_optGenCa] + _caOptions + _caCertOptions \
       + _genOptions + [_optCaCertOnly]
-    _caRpmOnlySet = [_optGenCa, _optCaKey, _optCaCert] \
+    _caRpmOnlySet = [_optGenCa, _optCaKey, _optCaCert, _optCaCertDir] \
       + _buildRpmOptions + [_optCaCertRpm] + _genOptions
 
     # server build option tree set possibilities
     _serverSet = [_optGenServer, _optGenClient] + _serverKeyOptions + _serverCertReqOptions \
       + _serverCertOptions + _serverConfOptions + _genOptions \
-      + [_optServerKeyOnly, _optServerCertReqOnly, _optServerCertOnly] \
+      + [_optServerKeyOnly, _optServerCertReqOnly, _optServerCertOnly, _optServerCertDir] \
       + _buildRpmOptions + [_optServerRpm, _optServerTar, _optNoRpm]
     _serverKeyOnlySet = [_optGenServer, _optGenClient] + _serverKeyOptions \
       + _genOptions + [_optServerKeyOnly]
@@ -169,7 +176,7 @@ def _getOptionsTree(defs):
       + _genOptions + [_optServerCertReqOnly]
     _serverCertOnlySet = [_optGenServer, _optGenClient] + _serverCertOptions \
       + _genOptions + [_optServerCertOnly]
-    _serverRpmOnlySet = [_optGenServer, _optGenClient, _optServerKey, _optServerCertReq, _optServerCert, _optSetHostname, _optSetCname ] \
+    _serverRpmOnlySet = [_optGenServer, _optGenClient, _optServerKey, _optServerCertReq, _optServerCert, _optServerCertDir, _optSetHostname, _optSetCname ] \
       + _buildRpmOptions + [_optServerRpm, _optServerTar] + _genOptions
      
     optionsTree = {

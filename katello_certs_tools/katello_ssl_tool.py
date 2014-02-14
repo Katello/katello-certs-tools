@@ -108,6 +108,14 @@ def getCAPassword(options, confirmYN=1):
                 print "Passwords do not match.\n"
                 pw = None
         DEFS['--password'] = options.password = pw
+    
+    if options.password.startswith('file:'):
+        path = options.password.replace('file:', '')
+        
+        if os.path.isfile(path):
+            with open(path, 'r') as f:
+                options.password = f.read()
+
     return options.password
 
 
@@ -529,6 +537,7 @@ def genCaRpm_dependencies(d):
 def genCaRpm(d, verbosity=0):
     """ generates ssl cert RPM. """
 
+    ca_cert_path = d['--ca-cert-dir']
     ca_cert_name = os.path.basename(d['--ca-cert'])
     ca_cert = os.path.join(d['--dir'], ca_cert_name)
     ca_cert_rpm_name = os.path.basename(d['--ca-cert-rpm'])
@@ -563,14 +572,26 @@ def genCaRpm(d, verbosity=0):
         rel = str(int(rel)+1)
 
     # build the CA certificate RPM
-    args = (os.path.join(CERT_PATH, 'gen-rpm.sh') + " "
-            "--name %s --version %s --release %s --packager %s --vendor %s "
-            "--group 'Applications/System' --summary %s --description %s "
-            "/usr/share/katello/%s=%s"
-            % (repr(ca_cert_rpm_name), ver, rel, repr(d['--rpm-packager']),
+    args = [
+        'katello-certs-gen-rpm',
+        "--name %s",
+        "--version %s",
+        "--release %s",
+        "--packager %s",
+        "--vendor %s",
+        "--group 'Applications/System'",
+        "--summary %s",
+        "--description %s",
+        os.path.join(ca_cert_path, "%s=%s")
+    ]
+
+    args = " ".join(args)
+
+    args = args % ((repr(ca_cert_rpm_name), ver, rel, repr(d['--rpm-packager']),
                repr(d['--rpm-vendor']), repr(CA_CERT_RPM_SUMMARY),
                repr(CA_CERT_RPM_SUMMARY), repr(ca_cert_name),
                repr(cleanupAbsPath(ca_cert))))
+
     clientRpmName = '%s-%s-%s' % (ca_cert_rpm, ver, rel)
     if verbosity >= 0:
         print """
@@ -789,6 +810,8 @@ def genServerRpm(d, verbosity=0):
     server_rpm_name = os.path.basename(d['--server-rpm'])
     server_rpm = os.path.join(serverKeyPairDir, server_rpm_name)
 
+    server_cert_dir = d['--server-cert-dir']
+
     postun_scriptlet = os.path.join(d['--dir'], 'postun.scriptlet')
 
     genServerRpm_dependencies(d)
@@ -827,20 +850,25 @@ server with this hostname: %s
 """ % d['--set-hostname']
 
     ## build the server RPM
-    args = (os.path.join(CERT_PATH, 'gen-rpm.sh') + " "
-            "--name %s --version %s --release %s --packager %s --vendor %s "
-            "--group 'Applications/System' --summary %s --description %s --postun %s "
-            "/etc/pki/tls/private/%s:0600=%s "
-            "/etc/pki/tls/certs/%s=%s "
-            "/etc/pki/tls/certs/%s=%s "
-            % (repr(server_rpm_name), ver, rel, repr(d['--rpm-packager']),
+    args = [
+        'katello-certs-gen-rpm',
+        "--name %s --version %s --release %s --packager %s --vendor %s ",
+        "--group 'Applications/System' --summary %s --description %s --postun %s ",
+        server_cert_dir + "/private/%s:0600=%s ",
+        server_cert_dir + "/certs/%s=%s ",
+        server_cert_dir + "/certs/%s=%s "
+    ]
+
+    args = " ".join(args)
+
+    args = args % (repr(server_rpm_name), ver, rel, repr(d['--rpm-packager']),
                repr(d['--rpm-vendor']),
                repr(SERVER_RPM_SUMMARY), repr(description),
                repr(cleanupAbsPath(postun_scriptlet)),
                repr(server_key_name), repr(cleanupAbsPath(server_key)),
                repr(server_cert_req_name), repr(cleanupAbsPath(server_cert_req)),
                repr(server_cert_name), repr(cleanupAbsPath(server_cert))
-               ))
+               )
     serverRpmName = "%s-%s-%s" % (server_rpm, ver, rel)
 
     if verbosity >= 0:

@@ -31,7 +31,7 @@ from sslToolLib import daysTil18Jan2038, incSerial, fixSerial
 
 
 # defaults where we can see them (NOTE: directory is figured at write time)
-CERT_PATH = '/usr/share/katello/certs'
+CERT_PATH = '/etc/pki/katello-certs-tools'
 BUILD_DIR = cleanupNormPath('./ssl-build', dotYN=1)
 HOSTNAME = socket.gethostname()
 MACHINENAME = HOSTNAME
@@ -95,12 +95,14 @@ _defs = \
         '--dir'             : BUILD_DIR,
         '--ca-key'          : 'KATELLO-PRIVATE-SSL-KEY',
         '--ca-cert'         : 'KATELLO-TRUSTED-SSL-CERT',
+        '--ca-cert-dir'     : CERT_PATH,
         '--cert-expiration' : int(daysTil18Jan2038()),
         '--startdate'       : getStartDate_aWeekAgo(),
 
         '--server-key'      : 'server.key',
         '--server-cert-req' : 'server.csr',
         '--server-cert'     : 'server.crt',
+        '--server-cert-dir' : CERT_PATH,
 
         '--set-country'     : 'US',
         '--set-common-name' : "",       # these two will never appear
@@ -180,6 +182,7 @@ def figureDEFS_CA(options):
 
     DEFS['--ca-key'] = os.path.basename(getOption(options, 'ca_key') or DEFS['--ca-key'])
     DEFS['--ca-cert'] = os.path.basename(getOption(options, 'ca_cert') or DEFS['--ca-cert'])
+    DEFS['--ca-cert-dir'] = getOption(options, 'ca_cert_dir') or DEFS['--ca-cert-dir']
 
     # the various default names for CA keys and certs
     if not getOption(options, 'ca_cert'):
@@ -211,6 +214,7 @@ def figureDEFS_CA(options):
     # remap to options object
     setOption(options, 'ca_key', DEFS['--ca-key'])
     setOption(options, 'ca_cert', DEFS['--ca-cert'])
+    setOption(options, 'ca_cert_dir', DEFS['--ca-cert-dir'])
     setOption(options, 'cert_expiration', DEFS['--cert-expiration'])
     setOption(options, 'ca_cert_rpm', DEFS['--ca-cert-rpm'])
 
@@ -233,6 +237,7 @@ def figureDEFS_server(options):
                              or BASE_SERVER_RPM_NAME+'-'+MACHINENAME
     DEFS['--server-tar'] = getOption(options, 'server_tar') \
                              or BASE_SERVER_TAR_NAME+'-'+MACHINENAME
+    DEFS['--server-cert-dir'] = getOption(options, 'server_cert_dir') or DEFS['--server-cert-dir']
 
     DEFS['--rpm-packager'] = getOption(options, 'rpm_packager')
     DEFS['--rpm-vendor'] = getOption(options, 'rpm_vendor')
@@ -252,6 +257,7 @@ def figureDEFS_server(options):
     setOption(options, 'cert_expiration', DEFS['--cert-expiration'])
     setOption(options, 'server_rpm', DEFS['--server-rpm'])
     setOption(options, 'server_tar', DEFS['--server-tar'])
+    setOption(options, 'server_cert_dir', DEFS['--server-cert-dir'])
 
 
 def figureDEFS_distinguishing(options):

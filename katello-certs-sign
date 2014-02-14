@@ -24,7 +24,7 @@
 #
 # $Id$
 
-TOPDIR=$(cd $(dirname $0) && pwd)
+TOPDIR=
 
 PASSWORD=
 STARTDATE=
@@ -49,7 +49,7 @@ usage() {
     echo
     echo "  OPTIONS:"
     echo "    --help            display usage and exit"
-    echo "    --topdir          path to gen-rpm.sh [$TOPDIR]"
+    echo "    --topdir          path to katello-certs-gen-rpm [$TOPDIR]"
     echo "    --password        password for the CA key [read from stdin]"
     echo "    --startdate       start date; format: YYMMDDHHMMSSZ (the letter Z)"
     echo "    --days            number of days the cert is valid"
@@ -176,7 +176,7 @@ for fn in $CA_KEY $CA_CRT $SERVER_KEY $SERVER_CSR $OPENSSL_CONF; do
     fi
 done
 
-GENRPMFILE=gen-rpm.sh
+GENRPMFILE=katello-certs-gen-rpm
 if [ ! -f $TOPDIR/$GENRPMFILE ]; then
     echo "$TOPDIR/$GENRPMFILE not found; please use --topdir"
     exit 1
@@ -265,4 +265,4 @@ $GENRPM --name ${CLIENT_RPM_NAME} --version $version \
     --release $release --packager "${PACKAGER}" \
     --summary "CA SSL certificate for Katello (client-side)" \
     --description "CA SSL certificate for Katello (client-side)" \
-    /usr/share/katello/${CA_CRT}=${CA_CRT} || exit 1
+    /usr/share/katello-certs-tools/${CA_CRT}=${CA_CRT} || exit 1

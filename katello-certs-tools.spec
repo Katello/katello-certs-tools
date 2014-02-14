@@ -1,13 +1,16 @@
-Name: katello-certs-tools
+Name:    katello-certs-tools
 Summary: Katello SSL Key/Cert Tool
-Group: Applications/Internet
+Group:   Applications/Internet
 License: GPLv2
 Version: 1.5.1
 Release: 1%{?dist}
 URL:      https://fedorahosted.org/katello
-Source0:  https://fedorahosted.org/releases/k/a/katello/%{name}-%{version}.tar.gz
+Source0: %{name}-%{version}.tar.gz
 BuildArch: noarch
-Requires: openssl rpm-build
+
+Requires: openssl
+Requires: rpm-build
+
 BuildRequires: docbook-utils
 BuildRequires: python
 
@@ -24,14 +27,20 @@ Katello.
 
 %install
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
-chmod +x $RPM_BUILD_ROOT/%{python_sitelib}/certs/katello_ssl_tool.py
+chmod +x $RPM_BUILD_ROOT/%{python_sitelib}/katello_certs_tools/katello_ssl_tool.py
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/pki/%{name}
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/pki/%{name}/certs
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/pki/%{name}/private
 
 %files
 %{python_sitelib}/*
-%{_datarootdir}/katello/certs
-%attr(755,root,root) %{_datarootdir}/katello/certs/*.sh
+%dir %{_sysconfdir}/pki/%{name}
+%dir %{_sysconfdir}/pki/%{name}/certs
+%dir %{_sysconfdir}/pki/%{name}/private
 %attr(755,root,root) %{_bindir}/katello-sudo-ssl-tool
 %attr(755,root,root) %{_bindir}/katello-ssl-tool
+%attr(755,root,root) %{_bindir}/katello-certs-gen-rpm
+%attr(755,root,root) %{_bindir}/katello-certs-sign
 %doc %{_mandir}/man1/katello-*.1*
 %doc LICENSE
 
