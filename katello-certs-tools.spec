@@ -8,7 +8,9 @@ URL:      https://fedorahosted.org/katello
 Source0: %{name}-%{version}.tar.gz
 BuildArch: noarch
 
-Requires: openssl
+#BZ 1022017
+Requires: openssl >= 1.0.1e-16
+
 Requires: rpm-build
 
 BuildRequires: docbook-utils
