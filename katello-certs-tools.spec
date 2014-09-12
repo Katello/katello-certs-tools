@@ -2,7 +2,7 @@ Name:    katello-certs-tools
 Summary: Katello SSL Key/Cert Tool
 Group:   Applications/Internet
 License: GPLv2
-Version: 1.5.2
+Version: 2.0.0
 Release: 1%{?dist}
 URL:      https://fedorahosted.org/katello
 Source0: %{name}-%{version}.tar.gz
