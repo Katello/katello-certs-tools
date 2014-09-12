@@ -47,6 +47,9 @@ mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/pki/%{name}/private
 %doc LICENSE
 
 %changelog
+* Fri Sep 12 2014 Justin Sherrill <jsherril@redhat.com> 2.1.0-1
+- bumping version to 2.1 (jsherril@redhat.com)
+
 * Fri Sep 12 2014 Justin Sherrill <jsherril@redhat.com> 2.0.1-1
 - add minimum openssl version (jmontleo@redhat.com)
 
