@@ -2,7 +2,7 @@ Name:    katello-certs-tools
 Summary: Katello SSL Key/Cert Tool
 Group:   Applications/Internet
 License: GPLv2
-Version: 2.0.0
+Version: 2.0.1
 Release: 1%{?dist}
 URL:      https://fedorahosted.org/katello
 Source0: %{name}-%{version}.tar.gz
@@ -47,6 +47,9 @@ mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/pki/%{name}/private
 %doc LICENSE
 
 %changelog
+* Fri Sep 12 2014 Justin Sherrill <jsherril@redhat.com> 2.0.1-1
+- add minimum openssl version (jmontleo@redhat.com)
+
 * Fri Mar 07 2014 Eric D. Helms <ericdhelms@gmail.com> 1.5.2-1
 - Removing dependence on /usr/share/katello and turning into a stand alone
   katello-certs-tools package. Includes updates to support specifying the certs

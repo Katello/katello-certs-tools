@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='Katello Certs Tools',
-      version='1.5.2',
+      version='2.0.1',
       description='Python modules used for Katello SSL tooling',
       author='Tomas Lestach',
       author_email='tlestach@redhat.com',
