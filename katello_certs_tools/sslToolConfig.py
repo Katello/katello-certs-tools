@@ -52,7 +52,7 @@ LEGACY_CA_CERT_RPM_NAME = 'rhns-ca-cert'
 CA_OPENSSL_CNF_NAME = 'katello-ca-openssl.cnf'
 SERVER_OPENSSL_CNF_NAME = 'katello-server-openssl.cnf'
 
-MD = 'sha1'
+MD = 'sha256'
 CRYPTO = '-des3'
 
 
