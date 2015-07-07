@@ -3,7 +3,7 @@ Summary: Katello SSL Key/Cert Tool
 Group:   Applications/Internet
 License: GPLv2
 Version: 2.3.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 URL:      https://fedorahosted.org/katello
 Source0: %{name}-%{version}.tar.gz
 BuildArch: noarch
@@ -47,6 +47,9 @@ mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/pki/%{name}/private
 %doc LICENSE
 
 %changelog
+* Tue Jul 07 2015 Stephen Benjamin <stbenjam@redhat.com> 2.3.0-2
+- Update for Katello 2.3 
+
 * Fri Jun 12 2015 Eric D. Helms <ericdhelms@gmail.com> 2.3.0-1
 - refs #10777 Use sha256 as default signing algorithm.
   (Roger.Spencer@humedica.com)
