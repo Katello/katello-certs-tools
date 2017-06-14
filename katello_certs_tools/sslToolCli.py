@@ -47,6 +47,7 @@ def _getOptionsTree(defs):
     _optCAKeyPassword = make_option('-p', '--password', action='store', type="string", help='CA password or password file location')
     _optCaKey = make_option('--ca-key', action='store', type="string", help='CA private key filename (default: %s)' % defs['--ca-key'])
     _optCaCert = make_option('--ca-cert', action='store', type="string", help='CA certificate filename (default: %s)' % defs['--ca-cert'])
+    _optOtherCaCerts = make_option('--other-ca-certs', action='store', type="string", help='Comma separated list of paths to other public CA certificates to be included in ours')
     _optCaCertDir = make_option('--ca-cert-dir', action='store', type="string", help='Directory to deploy CA cert and key to.')
 
     #_optServerKeyPassword = make_option('-p', '--password', action='store', type="string", help='password to generate the web server's SSL private key')
@@ -107,6 +108,7 @@ def _getOptionsTree(defs):
         _optCaForce,
         _optCAKeyPassword,
         _optCaKey,
+        _optOtherCaCerts,
         _optCaCertDir
         ]
 
@@ -116,6 +118,7 @@ def _getOptionsTree(defs):
         _optCAKeyPassword,
         _optCaKey,
         _optCaCert,
+        _optOtherCaCerts,
         _optCaCertDir,
         _optCertExp,
         ] + _caConfOptions
@@ -161,7 +164,7 @@ def _getOptionsTree(defs):
       + [_optCaKeyOnly]
     _caCertOnlySet = [_optGenCa] + _caOptions + _caCertOptions \
       + _genOptions + [_optCaCertOnly]
-    _caRpmOnlySet = [_optGenCa, _optCaKey, _optCaCert, _optCaCertDir] \
+    _caRpmOnlySet = [_optGenCa, _optCaKey, _optCaCert, _optCaCertDir, _optOtherCaCerts] \
       + _buildRpmOptions + [_optCaCertRpm] + _genOptions
 
     # server build option tree set possibilities
