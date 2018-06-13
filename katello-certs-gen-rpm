@@ -240,7 +240,7 @@ TARBALL=$NAME-$VERSION.tar.gz
 echo "Building $NAME-$VERSION-$RELEASE.$ARCH.rpm"
 
 rm -rf $RPM_BUILD_DIR
-install --verbose -d $RPM_BUILD_DIR/$DIRNAME
+install --verbose -d $RPM_BUILD_DIR/$DIRNAME/root
 
 # Prepare the tar file
 i=0
@@ -248,29 +248,18 @@ while [ $i -lt ${#PARAMS[*]} ]; do
     echo ${PARAMS[$i]} | (
         IFS== read dstmod src
         echo ${dstmod} | (IFS=: read dst mod
-            echo "${src} -> ${RPM_BUILD_DIR}/${DIRNAME}/${dst}"
+            echo "${src} -> ${RPM_BUILD_DIR}/${DIRNAME}/root/${dst}"
             if [ -d "$src" ] ; then
-                mkdir --parents --verbose ${RPM_BUILD_DIR}/${DIRNAME}/${dst}
+                mkdir --parents --verbose ${RPM_BUILD_DIR}/${DIRNAME}/root/${dst}
             else
-                mkdir --parents --verbose ${RPM_BUILD_DIR}/${DIRNAME}/`dirname "${dst}"`
-                cp ${src} ${RPM_BUILD_DIR}/${DIRNAME}/${dst}
+                dstdir=`dirname "${dst}"`
+                mkdir --parents --verbose ${RPM_BUILD_DIR}/${DIRNAME}/root/${dstdir}
+                cp ${src} ${RPM_BUILD_DIR}/${DIRNAME}/root/${dstdir}
             fi
         )
     )
     i=$[$i+1]
 done
-
-# Build the install section
-installsect=`i=0
-while [ $i -lt ${#PARAMS[*]} ]; do
-    echo ${PARAMS[$i]} | (
-        IFS== read dstmod src
-        echo ${dstmod} | (IFS=: read dst mod
-            echo "install --verbose -d \\\$RPM_BUILD_ROOT\`dirname ${dst}\`"
-            echo "install --verbose .${dst} \\\$RPM_BUILD_ROOT${dst}")
-    )
-    i=$[$i+1]
-done | sort | uniq | while read line; do echo -n "$line\n"; done`
 
 # Build the files section
 filessect=`i=0
@@ -325,8 +314,8 @@ Vendor: $VENDOR
 
 %install
 rm -rf \$RPM_BUILD_ROOT
-install -d \$RPM_BUILD_ROOT
-`echo -e $installsect`
+install -d \`dirname \$RPM_BUILD_ROOT\`
+cp --verbose -R root \$RPM_BUILD_ROOT
 
 %clean
 rm -rf \$RPM_BUILD_ROOT
