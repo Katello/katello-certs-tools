@@ -64,12 +64,12 @@ Generate and maintain SSL keys, certificates and deployment RPMs.
       the scope of using <command>openssl</command> to how we use it in Katello
       securing web applications.</para>
 
-    <para>Katello installer use <emphasis>/root/ssl-build</emphasis> as the
-      default build directory. We highly recommend to keep this directory for
+    <para>Katello installer uses <emphasis>/root/ssl-build</emphasis> as the
+      default build directory. We highly recommend this directory is kept for
       custom-generated certs as well.</para>
 
-    <para>This tool was originally written for Spacewalk project
-      and Katello installer makes use only of several options.</para>
+    <para>This tool was originally written for the Spacewalk project
+      and the Katello installer only makes use of several options.</para>
 
     <para>The basic process of SSL key/certificate/RPM generation using this
       tool: (<emphasis>step 1</emphasis>) generate a CA SSL key pair(set) and
@@ -173,7 +173,7 @@ Generate and maintain SSL keys, certificates and deployment RPMs.
 
                 <para>Time and date need to be correctly set on systems
                 establishing SSL connections. It is highly recommended that all
-                client and server systems have the <emphasis>ntpd</emphasis>
+                client and server systems have the <emphasis>chronyd</emphasis>
                 service installed, configured and running.</para>
 
             </listitem>
