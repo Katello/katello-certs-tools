@@ -96,6 +96,7 @@ _defs = \
         '--ca-key'          : 'KATELLO-PRIVATE-SSL-KEY',
         '--ca-cert'         : 'KATELLO-TRUSTED-SSL-CERT',
         '--ca-cert-dir'     : CERT_PATH,
+        '--other-ca-certs'  : None,
         '--cert-expiration' : int(daysTil18Jan2038()),
         '--startdate'       : getStartDate_aWeekAgo(),
 
@@ -183,6 +184,7 @@ def figureDEFS_CA(options):
     DEFS['--ca-key'] = os.path.basename(getOption(options, 'ca_key') or DEFS['--ca-key'])
     DEFS['--ca-cert'] = os.path.basename(getOption(options, 'ca_cert') or DEFS['--ca-cert'])
     DEFS['--ca-cert-dir'] = getOption(options, 'ca_cert_dir') or DEFS['--ca-cert-dir']
+    DEFS['--other-ca-certs'] = getOption(options, 'other_ca_certs') or DEFS['--other-ca-certs']
 
     # the various default names for CA keys and certs
     if not getOption(options, 'ca_cert'):
@@ -217,6 +219,7 @@ def figureDEFS_CA(options):
     setOption(options, 'ca_cert_dir', DEFS['--ca-cert-dir'])
     setOption(options, 'cert_expiration', DEFS['--cert-expiration'])
     setOption(options, 'ca_cert_rpm', DEFS['--ca-cert-rpm'])
+    setOption(options, 'other_ca_certs', DEFS['--other-ca-certs'])
 
 
 def figureDEFS_server(options):

@@ -118,6 +118,16 @@ def getCAPassword(options, confirmYN=1):
 
     return options.password
 
+def appendOtherCACerts(d, ca_cert):
+  if d['--other-ca-certs']:
+      ca_cert_content = open(cleanupAbsPath(ca_cert)).read()
+      for fname in d['--other-ca-certs'].split(','):
+          with open(fname) as infile:
+              content = infile.read()
+              if content not in ca_cert_content:
+                  open(cleanupAbsPath(ca_cert), 'a').writelines(content)
+                  ca_cert_content = open(cleanupAbsPath(ca_cert)).read()
+
 
 def genPrivateCaKey(password, d, verbosity=0, forceYN=0):
     """ private CA key generation """
@@ -248,6 +258,8 @@ def genPublicCaCert(password, d, verbosity=0, forceYN=0):
             print "STDOUT:", out
         if err:
             print "STDERR:", err
+
+    appendOtherCACerts(d, ca_cert)
 
     latest_txt = os.path.join(d['--dir'], 'latest.txt')
     fo = open(latest_txt, 'wb')
@@ -544,6 +556,7 @@ def genCaRpm(d, verbosity=0):
     ca_cert_rpm = os.path.join(d['--dir'], ca_cert_rpm_name)
 
     genCaRpm_dependencies(d)
+    appendOtherCACerts(d, ca_cert)
 
     if verbosity >= 0:
         sys.stderr.write("\n...working...")
