@@ -17,13 +17,13 @@ import os
 import sys
 import pwd
 import grp
-import types
 import shutil
 import subprocess
 import select
-import stat
 import tempfile
-from checksum import getFileChecksum
+import errno
+
+from katello_certs_tools.checksum import getFileChecksum
 
 
 def cleanupAbsPath(path):
@@ -79,17 +79,15 @@ def rotateFile(filepath, depth=5, suffix='.', verbosity=0):
     """
 
     # check argument sanity (should really be down outside of this function)
-    if not filepath or type(filepath) != type(''):
+    if not filepath or not isinstance(filepath, str):
         raise ValueError("filepath '%s' is not a valid arguement" % filepath)
-    if type(depth) != type(0) or depth < -1 \
-      or depth > sys.maxint-1 or depth == 0:
+    if not isinstance(depth, int) or depth < -1 or depth > sys.maxsize-1 or depth == 0:
         raise ValueError("depth must fall within range "
-                         "[-1, 1...%s]" % (sys.maxint-1))
+                         "[-1, 1...%s]" % (sys.maxsize-1))
 
     # force verbosity to be a numeric value
     verbosity = verbosity or 0
-    if type(verbosity) != type(0) or verbosity < -1 \
-      or verbosity > sys.maxint-1:
+    if not isinstance(verbosity, int) or verbosity < -1 or verbosity > sys.maxsize-1:
         raise ValueError('invalid verbosity value: %s' % (verbosity))
 
     filepath = cleanupAbsPath(filepath)
@@ -99,7 +97,6 @@ def rotateFile(filepath, depth=5, suffix='.', verbosity=0):
     pathNSuffix = filepath + suffix
     pathNSuffix1 = pathNSuffix + '1'
 
-
     if verbosity > 1:
         sys.stderr.write("Working dir: %s\n"
                          % os.path.dirname(pathNSuffix))
@@ -107,9 +104,9 @@ def rotateFile(filepath, depth=5, suffix='.', verbosity=0):
     # is there anything to do? (existence, then size, then checksum)
     checksum_type = 'md5'       # FIXME: this should be configuation option
     if os.path.exists(pathNSuffix1) and os.path.isfile(pathNSuffix1) \
-      and os.stat(filepath)[6] == os.stat(pathNSuffix1)[6] \
-      and getFileChecksum(checksum_type, filepath) == \
-          getFileChecksum(checksum_type, pathNSuffix1):
+        and os.stat(filepath)[6] == os.stat(pathNSuffix1)[6] \
+        and getFileChecksum(checksum_type, filepath) == \
+            getFileChecksum(checksum_type, pathNSuffix1):
         # nothing to do
         if verbosity:
             sys.stderr.write("File '%s' is identical to its rotation. "
@@ -163,19 +160,19 @@ def rhn_popen(cmd, progressCallback=None, bufferSize=16384, outputLog=None):
         progressCallback --> progress bar twiddler
         outputLog --> optional log file file object write method
     """
-    cmd_is_list = type(cmd) in (types.ListType, types.TupleType)
+    cmd_is_list = isinstance(cmd, list) or isinstance(cmd, tuple)
     if cmd_is_list:
         cmd = map(str, cmd)
     c = subprocess.Popen(cmd, bufsize=0, stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                close_fds=True, shell=(not cmd_is_list))
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         close_fds=True, shell=(not cmd_is_list))
 
     # We don't write to the child process
     c.stdin.close()
 
     # Create two temporary streams to hold the info from stdout and stderr
-    child_out = tempfile.TemporaryFile(prefix = '/tmp/my-popen-', mode = 'r+b')
-    child_err = tempfile.TemporaryFile(prefix = '/tmp/my-popen-', mode = 'r+b')
+    child_out = tempfile.TemporaryFile(prefix='/tmp/my-popen-', mode='r+b')
+    child_err = tempfile.TemporaryFile(prefix='/tmp/my-popen-', mode='r+b')
 
     # Map the input file descriptor with the temporary (output) one
     fd_mappings = [(c.stdout, child_out), (c.stderr, child_err)]
@@ -226,7 +223,8 @@ def rhn_popen(cmd, progressCallback=None, bufferSize=16384, outputLog=None):
 
     return exitcode, child_out, child_err
 
-def makedirs(path,  mode=0755, user=None, group=None):
+
+def makedirs(path,  mode=0o755, user=None, group=None):
     "makedirs function that also changes the owners"
 
     dirs_to_create = []
@@ -250,8 +248,8 @@ def makedirs(path,  mode=0755, user=None, group=None):
         dirname = dirs_to_create.pop()
         try:
             os.mkdir(dirname, mode)
-        except OSError, e:
-            if e.errno != 17: # File exists
+        except OSError as e:
+            if e.errno != errno.EEXIST:  # File exists
                 raise
             # Ignore the error
         try:
@@ -260,7 +258,8 @@ def makedirs(path,  mode=0755, user=None, group=None):
             # Changing permissions failed; ignore the error
             sys.stderr.write("Changing owner for %s failed\n" % dirname)
 
-def createPath(path, user='apache', group='apache', chmod=0755):
+
+def createPath(path, user='apache', group='apache', chmod=0o755):
     """advanced makedirs
 
     Will create the path if necessary.
@@ -273,7 +272,7 @@ def createPath(path, user='apache', group='apache', chmod=0755):
     if not os.path.exists(path):
         makedirs(path, mode=chmod, user=user, group=group)
     elif not os.path.isdir(path):
-        raise ValueError, "ERROR: createPath('%s'): path doesn't lead to a directory" % str(path)
+        raise ValueError("ERROR: createPath('%s'): path doesn't lead to a directory" % str(path))
     else:
         os.chmod(path, chmod)
         uid, gid = getUidGid(user, group)
@@ -284,10 +283,10 @@ def createPath(path, user='apache', group='apache', chmod=0755):
             sys.stderr.write("Changing owner for %s failed\n" % path)
 
 
-def setPermsPath(path, user='apache', group='root', chmod=0750):
+def setPermsPath(path, user='apache', group='root', chmod=0o750):
     """chown user.group and set permissions to chmod"""
     if not os.path.exists(path):
-        raise OSError, "*** ERROR: Path doesn't exist (can't set permissions): %s" % path
+        raise OSError("*** ERROR: Path doesn't exist (can't set permissions): %s" % path)
 
     # If non-root, don't bother to change owners
     if os.getuid() != 0:
@@ -296,16 +295,17 @@ def setPermsPath(path, user='apache', group='root', chmod=0750):
     gc = GecosCache()
     uid = gc.getuid(user)
     if uid is None:
-        raise OSError, "*** ERROR: user '%s' doesn't exist. Cannot set permissions properly." % user
+        raise OSError("*** ERROR: user '%s' doesn't exist. Cannot set permissions properly." % user)
 
     gid = gc.getgid(group)
     if gid is None:
-        raise OSError, "*** ERROR: group '%s' doesn't exist. Cannot set permissions properly." % group
+        raise OSError("*** ERROR: group '%s' doesn't exist. Cannot set permissions properly." % group)
 
     uid_, gid_ = os.stat(path)[4:6]
     if uid_ != uid or gid_ != gid:
         os.chown(path, uid, gid)
     os.chmod(path, chmod)
+
 
 class GecosCache:
     "Cache getpwnam() and getgrnam() calls"
@@ -320,7 +320,7 @@ class GecosCache:
 
     def getuid(self, name):
         "Return the UID of the user by name"
-        if self._users.has_key(name):
+        if name in self._users:
             return self._users[name]
         try:
             uid = pwd.getpwnam(name)[2]
@@ -333,7 +333,7 @@ class GecosCache:
 
     def getgid(self, name):
         "Return the GID of the group by name"
-        if self._groups.has_key(name):
+        if name in self._groups:
             return self._groups[name]
         try:
             gid = grp.getgrnam(name)[2]
@@ -347,6 +347,7 @@ class GecosCache:
     def reset(self):
         self.__shared_data.clear()
         self.__init__()
+
 
 def getUidGid(user=None, group=None):
     "return uid, gid given user and group"
@@ -368,46 +369,3 @@ def getUidGid(user=None, group=None):
     if gid is None:
         gid = os.getgid()
     return uid, gid
-
-FILETYPE2CHAR = {
-    'file'      : '-',
-    'directory' : 'd',
-    'symlink'   : 'l',
-    'chardev'   : 'c',
-    'blockdev'  : 'b',
-}
-
-def _ifelse(cond, thenval, elseval):
-    if cond:
-        return thenval
-    else:
-        return elseval
-
-def ostr_to_sym(octstr, ftype):
-    """ Convert filemode in octets (like '644') to string like "ls -l" ("-rwxrw-rw-")
-        ftype is one of: file, directory, symlink, chardev, blockdev.
-    """
-    mode = int(str(octstr), 8)
-
-    symstr = FILETYPE2CHAR.get(ftype, '?')
-
-    symstr += _ifelse(mode & stat.S_IRUSR, 'r', '-')
-    symstr += _ifelse(mode & stat.S_IWUSR, 'w', '-')
-    symstr += _ifelse(mode & stat.S_IXUSR,
-                      _ifelse(mode & stat.S_ISUID, 's', 'x'),
-                      _ifelse(mode & stat.S_ISUID, 'S', '-'))
-    symstr += _ifelse(mode & stat.S_IRGRP, 'r', '-')
-    symstr += _ifelse(mode & stat.S_IWGRP, 'w', '-')
-    symstr += _ifelse(mode & stat.S_IXGRP,
-                      _ifelse(mode & stat.S_ISGID, 's', 'x'),
-                      _ifelse(mode & stat.S_ISGID, 'S', '-'))
-    symstr += _ifelse(mode & stat.S_IROTH, 'r', '-')
-    symstr += _ifelse(mode & stat.S_IWOTH, 'w', '-')
-    symstr += _ifelse(mode & stat.S_IXOTH,
-                      _ifelse(mode & stat.S_ISVTX, 't', 'x'),
-                      _ifelse(mode & stat.S_ISVTX, 'T', '-'))
-    return symstr
-
-def f_date(dbiDate):
-    return "%04d-%02d-%02d %02d:%02d:%02d" % (dbiDate.year, dbiDate.month,
-        dbiDate.day, dbiDate.hour, dbiDate.minute, dbiDate.second)

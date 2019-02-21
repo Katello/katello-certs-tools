@@ -17,16 +17,18 @@
 #
 # $Id$
 
-## language imports
+from __future__ import print_function
 import os
 import sys
-import string
 import shutil
 import tempfile
-from timeLib import DAY, now, secs2days, secs2years
+
+from katello_certs_tools.timeLib import DAY, now, secs2days, secs2years
+
 
 class KatelloSslToolException(Exception):
     """ general exception class for the tool """
+
 
 errnoGeneralError = 1
 errnoSuccess = 0
@@ -38,14 +40,14 @@ def fixSerial(serial):
     if not serial:
         serial = '00'
 
-    if string.find(serial, '0x') == -1:
+    if serial.find('0x') == -1:
         serial = '0x'+serial
 
     # strip the '0x' if present
-    serial = string.split(serial, 'x')[-1]
+    serial = serial.split('x')[-1]
 
     # the string might have a trailing L
-    serial = string.replace(serial, 'L', '')
+    serial = serial.replace('L', '')
 
     # make sure the padding is correct
     # if odd number of digits, pad with a 0
@@ -62,13 +64,13 @@ def incSerial(serial):
     if not serial:
         serial = '00'
 
-    if string.find(serial, '0x') == -1:
+    if serial.find('0x') == -1:
         serial = '0x'+serial
 
     serial = eval(serial) + 1
     serial = hex(serial)
 
-    serial = string.split(serial, 'x')[-1]
+    serial = serial.split('x')[-1]
     return fixSerial(serial)
 
 
@@ -80,11 +82,13 @@ def secsTil18Jan2038():
     """ (int) secs til 1 day before the great 32-bit overflow
         We are making it 1 day just to be safe.
     """
-    return int(2L**31 - 1) - now() - DAY
+    return int(2**31 - 1) - now() - DAY
+
 
 def daysTil18Jan2038():
     "(float) days til 1 day before the great 32-bit overflow"
     return secs2days(secsTil18Jan2038())
+
 
 def yearsTil18Jan2038():
     "(float) approximate years til 1 day before the great 32-bit overflow"
@@ -95,10 +99,11 @@ def gendir(directory):
     "makedirs, but only if it doesn't exist first"
     if not os.path.exists(directory):
         try:
-            os.makedirs(directory, 0700)
-        except OSError, e:
-            print "Error: %s" % (e, )
+            os.makedirs(directory, 0o700)
+        except OSError as e:
+            print("Error: %s" % (e, ))
             sys.exit(1)
+
 
 def chdir(newdir):
     "chdir with the previous cwd as the return value"
@@ -108,15 +113,14 @@ def chdir(newdir):
 
 
 class TempDir:
-
     """ temp directory class with a cleanup destructor and method """
 
-    _shutil = shutil # trying to hang onto shutil during garbage collection
+    _shutil = shutil  # trying to hang onto shutil during garbage collection
 
     def __init__(self, suffix='-katello-ssl-tool'):
         "create a temporary directory in /tmp"
 
-        if string.find(suffix, '/') != -1:
+        if suffix.find('/') != -1:
             raise ValueError("suffix cannot be a path, only a name")
 
         # add some quick and dirty randomness to the tempfilename

@@ -1,0 +1,21 @@
+language: python
+dist: xenial
+virtualenv:
+  system_site_packages: true
+python:
+  - '3.5'
+  - '2.7'
+addons:
+  apt:
+    packages:
+    - docbook-utils
+    - python-rpm
+    - python3-rpm
+    - rpm
+install:
+  - pip install flake8
+script:
+  - flake8
+  - docbook2man katello-ssl-tool.sgml
+  - python setup.py install
+  - .travis/test.sh
