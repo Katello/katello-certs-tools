@@ -8,5 +8,4 @@ setup(name='Katello Certs Tools',
       url='https://fedorahosted.org/katello/',
       packages=['katello_certs_tools'],
       scripts=['katello-ssl-tool', 'katello-sudo-ssl-tool', 'katello-certs-sign', 'katello-certs-gen-rpm'],
-      data_files=[('share/man/man1', ['katello-ssl-tool.1'])]
-)
+      data_files=[('share/man/man1', ['katello-ssl-tool.1'])])

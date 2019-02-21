@@ -33,8 +33,10 @@
 #
 
 
+from __future__ import print_function
 from time import strftime, strptime, mktime, gmtime, timezone
 from time import time
+
 
 MIN = 60.0
 HOUR = 60 * MIN
@@ -42,32 +44,39 @@ DAY = 24 * HOUR
 WEEK = 7 * DAY
 YEAR = 365 * DAY
 
+
 def now():
     return round(time())
+
 
 def secs2str(str_format, secs):
     assert type(secs) in (type(1), type(1.0))
     return strftime(str_format, gmtime(round(secs)))
+
+
 def str2secs(s, str_format):
     return mktime(strptime(s, str_format)) - timezone
 
+
 def secs2days(secs):
     return round(secs/DAY)
+
+
 def secs2years(secs):
     "an approximation"
     return round(secs/YEAR)
 
-#-----------------------------------------------------------------------------
 
 def _test():
     nowS = now()
     F = '%b %d %H:%M:%S %Y'
-    print 'Right now, in seconds (epoch): ', nowS
-    print 'Right now, stringified:        ', secs2str(F, nowS)
+    print('Right now, in seconds (epoch): ', nowS)
+    print('Right now, stringified:        ', secs2str(F, nowS))
 
-    print 'YEAR, WEEK, DAY, HOUR, MIN: ', YEAR, WEEK, DAY, HOUR, MIN
-    print 'secs2days(DAY):  ', secs2days(DAY)
-    print 'secs2years(YEAR):', secs2years(YEAR)
+    print('YEAR, WEEK, DAY, HOUR, MIN: ', YEAR, WEEK, DAY, HOUR, MIN)
+    print('secs2days(DAY):  ', secs2days(DAY))
+    print('secs2years(YEAR):', secs2years(YEAR))
+
 
 if __name__ == '__main__':
     _test()

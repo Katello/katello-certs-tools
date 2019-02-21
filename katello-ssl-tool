@@ -29,23 +29,16 @@
 
 ## language imports
 import sys
-try:
-    import os
-    import string
-except KeyboardInterrupt:
-    sys.stderr.write("\nUser interrupted process.\n")
-    sys.exit(0)
+import os
 
 
-sys.path.append("@@ROOT@@")
-
-mod_name = string.replace(os.path.basename(sys.argv[0]), '-', '_')
+mod_name = os.path.basename(sys.argv[0]).replace('-', '_')
 try:
     mod = __import__("katello_certs_tools." + mod_name)
 except KeyboardInterrupt:
     sys.stderr.write("\nUser interrupted process.\n")
     sys.exit(0)
-except ImportError, e:
+except ImportError as e:
     sys.stderr.write("Unable to load module %s\n" % mod_name)
     sys.stderr.write(str(e) + "\n")
     sys.exit(1)

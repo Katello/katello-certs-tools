@@ -32,28 +32,28 @@
 # $Id$
 
 
-## language imports
+# language imports
+from __future__ import print_function
 import os
 import sys
 import glob
-import string
 import shutil
 import getpass
 
-## local imports
-from sslToolCli import processCommandline, CertExpTooShortException, \
+# local imports
+from katello_certs_tools.sslToolCli import processCommandline, CertExpTooShortException, \
         CertExpTooLongException, InvalidCountryCodeException
 
-from sslToolLib import KatelloSslToolException, \
+from katello_certs_tools.sslToolLib import KatelloSslToolException, \
         gendir, chdir, TempDir, \
         errnoGeneralError, errnoSuccess
 
-from fileutils import rotateFile, rhn_popen, cleanupAbsPath
+from katello_certs_tools.fileutils import rotateFile, rhn_popen, cleanupAbsPath
 
-from rhn_rpm import hdrLabelCompare, sortRPMs, get_package_header, \
+from katello_certs_tools.rhn_rpm import hdrLabelCompare, sortRPMs, get_package_header, \
         getInstalledHeader
 
-from sslToolConfig import ConfigFile, figureSerial, getOption, CERT_PATH, \
+from katello_certs_tools.sslToolConfig import ConfigFile, figureSerial, getOption, \
         DEFS, MD, CRYPTO, \
         CA_OPENSSL_CNF_NAME, SERVER_OPENSSL_CNF_NAME, POST_UNINSTALL_SCRIPT, \
         SERVER_RPM_SUMMARY, CA_CERT_RPM_SUMMARY
@@ -61,20 +61,36 @@ from sslToolConfig import ConfigFile, figureSerial, getOption, CERT_PATH, \
 
 class GenPrivateCaKeyException(KatelloSslToolException):
     """ private CA key generation error """
+
+
 class GenPublicCaCertException(KatelloSslToolException):
     """ public CA cert generation error """
+
+
 class GenServerKeyException(KatelloSslToolException):
     """ private server key generation error """
+
+
 class GenServerCertReqException(KatelloSslToolException):
     """ server cert request generation error """
+
+
 class GenServerCertException(KatelloSslToolException):
     """ server cert generation error """
+
+
 class GenCaCertRpmException(KatelloSslToolException):
     """ CA public certificate RPM generation error """
+
+
 class GenServerRpmException(KatelloSslToolException):
     """ server RPM generation error """
+
+
 class GenServerTarException(KatelloSslToolException):
     """ server tar archive generation error """
+
+
 class FailedFileDependencyException(Exception):
     """ missing a file needed for this step """
 
@@ -88,7 +104,10 @@ def pathJoin(path, filename):
     filename = os.path.basename(filename)
     return os.path.join(path, filename)
 
+
 _workDirObj = None
+
+
 def _getWorkDir():
     global _workDirObj
     if not _workDirObj:
@@ -105,28 +124,29 @@ def getCAPassword(options, confirmYN=1):
             while not _pw:
                 _pw = getpass.getpass("CA password confirmation: ")
             if pw != _pw:
-                print "Passwords do not match.\n"
+                print("Passwords do not match.\n")
                 pw = None
         DEFS['--password'] = options.password = pw
-    
+
     if options.password.startswith('file:'):
         path = options.password.replace('file:', '')
-        
+
         if os.path.isfile(path):
             with open(path, 'r') as f:
                 options.password = f.read()
 
     return options.password
 
+
 def appendOtherCACerts(d, ca_cert):
-  if d['--other-ca-certs']:
-      ca_cert_content = open(cleanupAbsPath(ca_cert)).read()
-      for fname in d['--other-ca-certs'].split(','):
-          with open(fname) as infile:
-              content = infile.read()
-              if content not in ca_cert_content:
-                  open(cleanupAbsPath(ca_cert), 'a').writelines(content)
-                  ca_cert_content = open(cleanupAbsPath(ca_cert)).read()
+    if d['--other-ca-certs']:
+        ca_cert_content = open(cleanupAbsPath(ca_cert)).read()
+        for fname in d['--other-ca-certs'].split(','):
+            with open(fname) as infile:
+                content = infile.read()
+                if content not in ca_cert_content:
+                    open(cleanupAbsPath(ca_cert), 'a').writelines(content)
+                    ca_cert_content = open(cleanupAbsPath(ca_cert)).read()
 
 
 def genPrivateCaKey(password, d, verbosity=0, forceYN=0):
@@ -147,14 +167,14 @@ ERROR: a CA private key already exists:
             % ('%s', CRYPTO, repr(cleanupAbsPath(ca_key))))
 
     if verbosity >= 0:
-        print "Generating private CA key: %s" % ca_key
+        print("Generating private CA key: %s" % ca_key)
         if verbosity > 1:
-            print "Commandline:", args % "PASSWORD"
+            print("Commandline:", args % "PASSWORD")
     try:
         rotated = rotateFile(filepath=ca_key, verbosity=verbosity)
         if verbosity >= 0 and rotated:
-            print "Rotated: %s --> %s" \
-                  % (d['--ca-key'], os.path.basename(rotated))
+            print("Rotated: %s --> %s"
+                  % (d['--ca-key'], os.path.basename(rotated)))
     except ValueError:
         pass
 
@@ -164,20 +184,23 @@ ERROR: a CA private key already exists:
     finally:
         chdir(cwd)
 
-    out = out_stream.read(); out_stream.close()
-    err = err_stream.read(); err_stream.close()
+    out = out_stream.read().decode()
+    out_stream.close()
+    err = err_stream.read()
+    err_stream.close()
+
     if ret:
         raise GenPrivateCaKeyException("Certificate Authority private SSL "
                                        "key generation failed:\n%s\n%s"
                                        % (out, err))
     if verbosity > 2:
         if out:
-            print "STDOUT:", out
+            print("STDOUT:", out)
         if err:
-            print "STDERR:", err
+            print("STDERR:", err)
 
     # permissions:
-    os.chmod(ca_key, 0600)
+    os.chmod(ca_key, 0o600)
 
 
 def genPublicCaCert_dependencies(password, d, forceYN=0):
@@ -213,7 +236,7 @@ def genPublicCaCert(password, d, verbosity=0, forceYN=0):
     genPublicCaCert_dependencies(password, d, forceYN)
 
     configFile = ConfigFile(ca_openssl_cnf)
-    if d.has_key('--set-hostname'):
+    if '--set-hostname' in d:
         del d['--set-hostname']
     configFile.save(d, caYN=1, verbosity=verbosity)
 
@@ -225,19 +248,19 @@ def genPublicCaCert(password, d, verbosity=0, forceYN=0):
                repr(cleanupAbsPath(ca_cert))))
 
     if verbosity >= 0:
-        print "\nGenerating public CA certificate: %s" % ca_cert
-        print "Using distinguishing variables:"
+        print("\nGenerating public CA certificate: %s" % ca_cert)
+        print("Using distinguishing variables:")
         for k in ('--set-country', '--set-state', '--set-city', '--set-org',
                   '--set-org-unit', '--set-common-name', '--set-email'):
-            print '    %s%s = "%s"' % (k, ' '*(18-len(k)), d[k])
+            print('    %s%s = "%s"' % (k, ' '*(18-len(k)), d[k]))
         if verbosity > 1:
-            print "Commandline:", args % "PASSWORD"
+            print("Commandline:", args % "PASSWORD")
 
     try:
         rotated = rotateFile(filepath=ca_cert, verbosity=verbosity)
         if verbosity >= 0 and rotated:
-            print "Rotated: %s --> %s" \
-                  % (d['--ca-cert'], os.path.basename(rotated))
+            print("Rotated: %s --> %s"
+                  % (d['--ca-cert'], os.path.basename(rotated)))
     except ValueError:
         pass
 
@@ -247,28 +270,32 @@ def genPublicCaCert(password, d, verbosity=0, forceYN=0):
     finally:
         chdir(cwd)
 
-    out = out_stream.read(); out_stream.close()
-    err = err_stream.read(); err_stream.close()
+    out = out_stream.read().decode()
+    out_stream.close()
+    err = err_stream.read()
+    err_stream.close()
+
     if ret:
         raise GenPublicCaCertException("Certificate Authority public "
-                                   "SSL certificate generation failed:\n%s\n"
-                                   "%s" % (out, err))
+                                       "SSL certificate generation failed:\n%s\n"
+                                       "%s" % (out, err))
     if verbosity > 2:
         if out:
-            print "STDOUT:", out
+            print("STDOUT:", out)
         if err:
-            print "STDERR:", err
+            print("STDERR:", err)
 
     appendOtherCACerts(d, ca_cert)
 
     latest_txt = os.path.join(d['--dir'], 'latest.txt')
-    fo = open(latest_txt, 'wb')
-    fo.write('%s\n' % ca_cert_name)
+    fo = open(latest_txt, 'w')
+    fo.write("%s\n" % ca_cert_name)
     fo.close()
 
     # permissions:
-    os.chmod(ca_cert, 0644)
-    os.chmod(latest_txt, 0644)
+    os.chmod(ca_cert, 0o644)
+    os.chmod(latest_txt, 0o644)
+
 
 def genServerKey(d, verbosity=0):
     """ private server key generation """
@@ -285,15 +312,15 @@ def genServerKey(d, verbosity=0):
 
     # generate the server key
     if verbosity >= 0:
-        print "\nGenerating the web server's SSL private key: %s" % server_key
+        print("\nGenerating the web server's SSL private key: %s" % server_key)
         if verbosity > 1:
-            print "Commandline:", args
+            print("Commandline:", args)
 
     try:
         rotated = rotateFile(filepath=server_key, verbosity=verbosity)
         if verbosity >= 0 and rotated:
-            print "Rotated: %s --> %s" % (d['--server-key'],
-                                          os.path.basename(rotated))
+            print("Rotated: %s --> %s" % (d['--server-key'],
+                                          os.path.basename(rotated)))
     except ValueError:
         pass
 
@@ -303,19 +330,22 @@ def genServerKey(d, verbosity=0):
     finally:
         chdir(cwd)
 
-    out = out_stream.read(); out_stream.close()
-    err = err_stream.read(); err_stream.close()
+    out = out_stream.read().decode()
+    out_stream.close()
+    err = err_stream.read()
+    err_stream.close()
+
     if ret:
         raise GenServerKeyException("web server's SSL key generation failed:\n%s\n%s"
-                                % (out, err))
+                                    % (out, err))
     if verbosity > 2:
         if out:
-            print "STDOUT:", out
+            print("STDOUT:", out)
         if err:
-            print "STDERR:", err
+            print("STDERR:", err)
 
     # permissions:
-    os.chmod(server_key, 0600)
+    os.chmod(server_key, 0o600)
 
 
 def genServerCertReq_dependencies(d):
@@ -349,26 +379,26 @@ def genServerCertReq(d, verbosity=0):
     configFile = ConfigFile(server_openssl_cnf)
     configFile.save(d, caYN=0, verbosity=verbosity)
 
-    ## generate the server cert request
+    # generate the server cert request
     args = ("/usr/bin/openssl req -%s -text -config %s -new -key %s -out %s "
             % (MD, repr(cleanupAbsPath(configFile.filename)),
                repr(cleanupAbsPath(server_key)),
                repr(cleanupAbsPath(server_cert_req))))
 
     if verbosity >= 0:
-        print "\nGenerating web server's SSL certificate request: %s" % server_cert_req
-        print "Using distinguished names:"
+        print("\nGenerating web server's SSL certificate request: %s" % server_cert_req)
+        print("Using distinguished names:")
         for k in ('--set-country', '--set-state', '--set-city', '--set-org',
                   '--set-org-unit', '--set-hostname', '--set-email'):
-            print '    %s%s = "%s"' % (k, ' '*(18-len(k)), d[k])
+            print('    %s%s = "%s"' % (k, ' '*(18-len(k)), d[k]))
         if verbosity > 1:
-            print "Commandline:", args
+            print("Commandline:", args)
 
     try:
         rotated = rotateFile(filepath=server_cert_req, verbosity=verbosity)
         if verbosity >= 0 and rotated:
-            print "Rotated: %s --> %s" % (d['--server-cert-req'],
-                                          os.path.basename(rotated))
+            print("Rotated: %s --> %s" % (d['--server-cert-req'],
+                                          os.path.basename(rotated)))
     except ValueError:
         pass
 
@@ -378,20 +408,23 @@ def genServerCertReq(d, verbosity=0):
     finally:
         chdir(cwd)
 
-    out = out_stream.read(); out_stream.close()
-    err = err_stream.read(); err_stream.close()
+    out = out_stream.read().decode()
+    out_stream.close()
+    err = err_stream.read()
+    err_stream.close()
+
     if ret:
         raise GenServerCertReqException(
                 "web server's SSL certificate request generation "
                 "failed:\n%s\n%s" % (out, err))
     if verbosity > 2:
         if out:
-            print "STDOUT:", out
+            print("STDOUT:", out)
         if err:
-            print "STDERR:", err
+            print("STDERR:", err)
 
     # permissions:
-    os.chmod(server_cert_req, 0600)
+    os.chmod(server_cert_req, 0o600)
 
 
 def genServerCert_dependencies(password, d):
@@ -442,7 +475,7 @@ def genServerCert(password, d, verbosity=0):
 
     try:
         os.unlink(index_txt)
-    except:
+    except OSError:
         pass
 
     # figure out the serial file and truncate the index.txt file.
@@ -465,14 +498,14 @@ def genServerCert(password, d, verbosity=0):
                repr(cleanupAbsPath(server_cert))))
 
     if verbosity >= 0:
-        print "\nGenerating/signing web server's SSL certificate: %s" % d['--server-cert']
+        print("\nGenerating/signing web server's SSL certificate: %s" % d['--server-cert'])
         if verbosity > 1:
-            print "Commandline:", args % 'PASSWORD'
+            print("Commandline:", args % 'PASSWORD')
     try:
         rotated = rotateFile(filepath=server_cert, verbosity=verbosity)
         if verbosity >= 0 and rotated:
-            print "Rotated: %s --> %s" % (d['--server-cert'],
-                                          os.path.basename(rotated))
+            print("Rotated: %s --> %s" % (d['--server-cert'],
+                                          os.path.basename(rotated)))
     except ValueError:
         pass
 
@@ -482,14 +515,16 @@ def genServerCert(password, d, verbosity=0):
     finally:
         chdir(cwd)
 
-    out = out_stream.read(); out_stream.close()
-    err = err_stream.read(); err_stream.close()
+    out = out_stream.read().decode()
+    out_stream.close()
+    err = err_stream.read()
+    err_stream.close()
 
     if ret:
         # signature for a mistyped CA password
-        if string.find(err, "unable to load CA private key") != -1 \
-          and string.find(err, "error:0906A065:PEM routines:PEM_do_header:bad decrypt:pem_lib.c") != -1 \
-          and string.find(err, "error:06065064:digital envelope routines:EVP_DecryptFinal:bad decrypt:evp_enc.c") != -1:
+        if "unable to load CA private key" in err \
+          and "error:0906A065:PEM routines:PEM_do_header:bad decrypt:pem_lib.c" in err \
+          and "error:06065064:digital envelope routines:EVP_DecryptFinal:bad decrypt:evp_enc.c" in err:
             raise GenServerCertException(
                     "web server's SSL certificate generation/signing "
                     "failed:\nDid you mistype your CA password?")
@@ -500,35 +535,37 @@ def genServerCert(password, d, verbosity=0):
 
     if verbosity > 2:
         if out:
-            print "STDOUT:", out
+            print("STDOUT:", out)
         if err:
-            print "STDERR:", err
+            print("STDERR:", err)
 
     # permissions:
-    os.chmod(server_cert, 0644)
+    os.chmod(server_cert, 0o644)
 
     # cleanup duplicate XX.pem file:
-    pemFilename = os.path.basename(string.upper(ser)+'.pem')
+    pemFilename = os.path.basename(ser.upper()+'.pem')
     if pemFilename != server_cert and os.path.exists(pemFilename):
         os.unlink(pemFilename)
 
     # cleanup the old index.txt file
     try:
         os.unlink(index_txt + '.old')
-    except:
+    except OSError:
         pass
 
     # cleanup the old serial file
     try:
         os.unlink(serial + '.old')
-    except:
+    except OSError:
         pass
+
 
 def _disableRpmMacros():
     mac = cleanupAbsPath('~/.rpmmacros')
     macTmp = cleanupAbsPath('~/RENAME_ME_BACK_PLEASE-lksjdflajsd.rpmmacros')
     if os.path.exists(mac):
         os.rename(mac, macTmp)
+
 
 def _reenableRpmMacros():
     mac = cleanupAbsPath('~/.rpmmacros')
@@ -563,7 +600,7 @@ def genCaRpm(d, verbosity=0):
     # Work out the release number.
     hdr = getInstalledHeader(ca_cert_rpm)
 
-    #find RPMs in the directory
+    # find RPMs in the directory
     filenames = glob.glob("%s-*.noarch.rpm" % ca_cert_rpm)
     if filenames:
         filename = sortRPMs(filenames)[-1]
@@ -577,7 +614,8 @@ def genCaRpm(d, verbosity=0):
 
     ver, rel = '1.0', '0'
     if hdr is not None:
-        ver, rel = hdr['version'], hdr['release']
+        ver = str(hdr['version'].decode('utf-8'))
+        rel = str(hdr['release'].decode('utf-8'))
 
     # bump the release - and let's not be too smart about it
     #                    assume the release is a number.
@@ -601,18 +639,18 @@ def genCaRpm(d, verbosity=0):
     args = " ".join(args)
 
     args = args % ((repr(ca_cert_rpm_name), ver, rel, repr(d['--rpm-packager']),
-               repr(d['--rpm-vendor']), repr(CA_CERT_RPM_SUMMARY),
-               repr(CA_CERT_RPM_SUMMARY), repr(ca_cert_name),
-               repr(cleanupAbsPath(ca_cert))))
+                    repr(d['--rpm-vendor']), repr(CA_CERT_RPM_SUMMARY),
+                    repr(CA_CERT_RPM_SUMMARY), repr(ca_cert_name),
+                    repr(cleanupAbsPath(ca_cert))))
 
     clientRpmName = '%s-%s-%s' % (ca_cert_rpm, ver, rel)
     if verbosity >= 0:
-        print """
+        print("""
 Generating CA public certificate RPM:
     %s.src.rpm
-    %s.noarch.rpm""" % (clientRpmName, clientRpmName)
+    %s.noarch.rpm""" % (clientRpmName, clientRpmName))
         if verbosity > 1:
-            print "Commandline:", args
+            print("Commandline:", args)
 
     _disableRpmMacros()
     cwd = chdir(d['--dir'])
@@ -625,35 +663,36 @@ Generating CA public certificate RPM:
     chdir(cwd)
     _reenableRpmMacros()
 
-    out = out_stream.read(); out_stream.close()
-    err = err_stream.read(); err_stream.close()
+    out = out_stream.read().decode()
+    out_stream.close()
+    err = err_stream.read()
+    err_stream.close()
 
     if ret or not os.path.exists("%s.noarch.rpm" % clientRpmName):
         raise GenCaCertRpmException("CA public SSL certificate RPM generation "
-                                "failed:\n%s\n%s" % (out, err))
+                                    "failed:\n%s\n%s" % (out, err))
     if verbosity > 2:
         if out:
-            print "STDOUT:", out
+            print("STDOUT:", out)
         if err:
-            print "STDERR:", err
-    os.chmod('%s.noarch.rpm' % clientRpmName, 0644)
+            print("STDERR:", err)
+    os.chmod('%s.noarch.rpm' % clientRpmName, 0o644)
 
     # write-out latest.txt information
     latest_txt = os.path.join(d['--dir'], 'latest.txt')
-    fo = open(latest_txt, 'wb')
+    fo = open(latest_txt, 'w')
     fo.write('%s\n' % ca_cert_name)
     fo.write('%s.noarch.rpm\n' % os.path.basename(clientRpmName))
     fo.write('%s.src.rpm\n' % os.path.basename(clientRpmName))
     fo.close()
-    os.chmod(latest_txt, 0644)
+    os.chmod(latest_txt, 0o644)
 
     if verbosity >= 0:
-        print """
+        print("""
 Make the public CA certficate publically available:
     (NOTE: the Katello installer may do this step for you.)
     The "noarch" RPM and raw CA certificate can be made publically accessible
-    by copying it to the /var/www/html/pub directory of your Katello server."""
-
+    by copying it to the /var/www/html/pub directory of your Katello server.""")
 
     return '%s.noarch.rpm' % clientRpmName
 
@@ -664,7 +703,7 @@ def genProxyServerTarball_dependencies(d):
     """
 
     serverKeySetDir = os.path.join(d['--dir'],
-                                    d['--set-hostname'])
+                                   d['--set-hostname'])
     gendir(serverKeySetDir)
 
     ca_cert = pathJoin(d['--dir'], d['--ca-cert'])
@@ -687,9 +726,9 @@ def getTarballFilename(d, version='1.0', release='1'):
     server_tar_name = pathJoin(serverKeySetDir, d['--server-tar'])
 
     filenames = glob.glob("%s-%s-*.tar" % (server_tar_name, version))
-    filenames.sort() # tested to be reliable
+    filenames.sort()  # tested to be reliable
 
-    versions = map(lambda x, n=len(server_tar_name): x[n+1:-4], filenames)
+    versions = list(map(lambda x, n=len(server_tar_name): x[n+1:-4], filenames))
     versions.sort()
 
     current = None
@@ -698,17 +737,17 @@ def getTarballFilename(d, version='1.0', release='1'):
 
     next_name = "%s-%s-1.tar" % (server_tar_name, version)
     if current:
-        v = string.split(versions[-1], '-')
+        v = versions[-1].split('-')
         v[-1] = str(int(v[-1])+1)
-        next_name = "%s-%s.tar" % (server_tar_name, string.join(v, '-'))
+        next_name = "%s-%s.tar" % (server_tar_name, '-'.join(v))
         current = os.path.basename(current)
 
     # incoming release (usually coming from RPM version) is factored in
     # ...if RPM version-release is greater then that is used.
     v = next_name[len(server_tar_name)+1:-4]
-    v = string.split(v, '-')
+    v = v.split('-')
     v[-1] = str(max(int(v[-1]), int(release)))
-    next_name = "%s-%s.tar" % (server_tar_name, string.join(v, '-'))
+    next_name = "%s-%s.tar" % (server_tar_name, '-'.join(v))
     next_name = os.path.basename(next_name)
 
     return current, next_name
@@ -730,7 +769,7 @@ def genProxyServerTarball(d, version='1.0', release='1', verbosity=0):
     server_cert = pathJoin(machinename, d['--server-cert'])
     server_cert_req = pathJoin(machinename, d['--server-cert-req'])
 
-    ## build the server tarball
+    # build the server tarball
     args = '/bin/tar -cvf %s %s %s %s %s' \
            % (repr(os.path.basename(tarballFilepath)), repr(ca_cert),
               repr(server_key), repr(server_cert), repr(server_cert_req))
@@ -739,48 +778,55 @@ def genProxyServerTarball(d, version='1.0', release='1', verbosity=0):
     tarballFilepath2 = pathJoin(serverKeySetDir, tarballFilepath)
 
     if verbosity >= 0:
-        print """
+        print("""
 The most current RHN Proxy Server installation process against RHN hosted
 requires the upload of an SSL tar archive that contains the CA SSL public
 certificate and the web server's key set.
 
 Generating the web server's SSL key set and CA SSL public certificate archive:
-    %s""" % tarballFilepath2
+    %s""" % tarballFilepath2)
 
     cwd = chdir(d['--dir'])
     try:
-        if verbosity > 1:
-            print "Current working directory:", os.getcwd()
-            print "Commandline:", args
+        if verbosity > 0:
+            print("Current working directory:", os.getcwd())
+            print("Commandline:", args)
         ret, out_stream, err_stream = rhn_popen(args)
     finally:
         chdir(cwd)
 
-    out = out_stream.read(); out_stream.close()
-    err = err_stream.read(); err_stream.close()
+    out = out_stream.read()
+    out_stream.close()
+    err = err_stream.read()
+    err_stream.close()
 
     if ret or not os.path.exists(tarballFilepath):
-        raise GenServerTarException(
-	  "CA SSL public certificate & web server's SSL key set tar archive\n"
-	  "generation failed:\n%s\n%s" % (out, err))
+        os.system("ls -la .")
+        os.system("ls -la ssl-build/")
+        msg = [
+            "CA SSL public certificate & web server's SSL key set tar archive\n",
+            "generation failed: %s\n" % (out),
+            "error: %s" % (err)
+        ]
+        raise GenServerTarException(''.join(msg))
     if verbosity > 2:
         if out:
-            print "STDOUT:", out
+            print("STDOUT:", out)
         if err:
-            print "STDERR:", err
+            print("STDERR:", err)
 
     # root baby!
-    os.chmod(tarballFilepath, 0600)
+    os.chmod(tarballFilepath, 0o600)
 
     # copy tarball into machine build dir
     shutil.copy2(tarballFilepath, tarballFilepath2)
     os.unlink(tarballFilepath)
     if verbosity > 1:
-        print """\
+        print("""\
 Moved to final home:
     %s
     ...moved to...
-    %s""" % (tarballFilepath, tarballFilepath2)
+    %s""" % (tarballFilepath, tarballFilepath2))
 
     return tarballFilepath2
 
@@ -804,6 +850,7 @@ def genServerRpm_dependencies(d):
     dependencyCheck(server_key)
     dependencyCheck(server_cert)
     dependencyCheck(server_cert_req)
+
 
 def genServerRpm(d, verbosity=0):
     """ generates server's SSL key set RPM """
@@ -836,7 +883,7 @@ def genServerRpm(d, verbosity=0):
     # Work out the release number.
     hdr = getInstalledHeader(server_rpm_name)
 
-    #find RPMs in the directory as well.
+    # find RPMs in the directory as well.
     filenames = glob.glob("%s-*.noarch.rpm" % server_rpm)
     if filenames:
         filename = sortRPMs(filenames)[-1]
@@ -850,7 +897,8 @@ def genServerRpm(d, verbosity=0):
 
     ver, rel = '1.0', '0'
     if hdr is not None:
-        ver, rel = hdr['version'], hdr['release']
+        ver = str(hdr['version'].decode('utf-8'))
+        rel = str(hdr['release'].decode('utf-8'))
 
     # bump the release - and let's not be too smart about it
     #                    assume the release is a number.
@@ -862,7 +910,7 @@ Best practices suggests that this RPM should only be installed on the web
 server with this hostname: %s
 """ % d['--set-hostname']
 
-    ## build the server RPM
+    # build the server RPM
     args = [
         'katello-certs-gen-rpm',
         "--name %s --version %s --release %s --packager %s --vendor %s ",
@@ -875,26 +923,26 @@ server with this hostname: %s
     args = " ".join(args)
 
     args = args % (repr(server_rpm_name), ver, rel, repr(d['--rpm-packager']),
-               repr(d['--rpm-vendor']),
-               repr(SERVER_RPM_SUMMARY), repr(description),
-               repr(cleanupAbsPath(postun_scriptlet)),
-               repr(server_key_name), repr(cleanupAbsPath(server_key)),
-               repr(server_cert_req_name), repr(cleanupAbsPath(server_cert_req)),
-               repr(server_cert_name), repr(cleanupAbsPath(server_cert))
-               )
+                   repr(d['--rpm-vendor']),
+                   repr(SERVER_RPM_SUMMARY), repr(description),
+                   repr(cleanupAbsPath(postun_scriptlet)),
+                   repr(server_key_name), repr(cleanupAbsPath(server_key)),
+                   repr(server_cert_req_name), repr(cleanupAbsPath(server_cert_req)),
+                   repr(server_cert_name), repr(cleanupAbsPath(server_cert))
+                   )
     serverRpmName = "%s-%s-%s" % (server_rpm, ver, rel)
 
     if verbosity >= 0:
-        print """
+        print("""
 Generating web server's SSL key pair/set RPM:
     %s.src.rpm
-    %s.noarch.rpm""" % (serverRpmName, serverRpmName)
+    %s.noarch.rpm""" % (serverRpmName, serverRpmName))
         if verbosity > 1:
-            print "Commandline:", args
+            print("Commandline:", args)
 
     if verbosity >= 4:
-        print 'Current working directory:', os.getcwd()
-        print "Writing postun_scriptlet:", postun_scriptlet
+        print('Current working directory:', os.getcwd())
+        print("Writing postun_scriptlet:", postun_scriptlet)
     open(postun_scriptlet, 'w').write(POST_UNINSTALL_SCRIPT)
 
     _disableRpmMacros()
@@ -906,19 +954,21 @@ Generating web server's SSL key pair/set RPM:
         _reenableRpmMacros()
         os.unlink(postun_scriptlet)
 
-    out = out_stream.read(); out_stream.close()
-    err = err_stream.read(); err_stream.close()
+    out = out_stream.read().decode()
+    out_stream.close()
+    err = err_stream.read()
+    err_stream.close()
 
     if ret or not os.path.exists("%s.noarch.rpm" % serverRpmName):
         raise GenServerRpmException("web server's SSL key set RPM generation "
                                     "failed:\n%s\n%s" % (out, err))
     if verbosity > 2:
         if out:
-            print "STDOUT:", out
+            print("STDOUT:", out)
         if err:
-            print "STDERR:", err
+            print("STDERR:", err)
 
-    os.chmod('%s.noarch.rpm' % serverRpmName, 0600)
+    os.chmod('%s.noarch.rpm' % serverRpmName, 0o600)
 
     # generic the tarball necessary for RHN Proxy against hosted installations
     tarballFilepath = genProxyServerTarball(d, version=ver, release=rel,
@@ -926,22 +976,23 @@ Generating web server's SSL key pair/set RPM:
 
     # write-out latest.txt information
     latest_txt = os.path.join(serverKeyPairDir, 'latest.txt')
-    fo = open(latest_txt, 'wb')
+    fo = open(latest_txt, 'w')
     fo.write('%s.noarch.rpm\n' % os.path.basename(serverRpmName))
     fo.write('%s.src.rpm\n' % os.path.basename(serverRpmName))
     fo.write('%s\n' % os.path.basename(tarballFilepath))
     fo.close()
-    os.chmod(latest_txt, 0600)
+    os.chmod(latest_txt, 0o600)
 
     if verbosity >= 0:
-        print """
+        print("""
 Deploy the server's SSL key pair/set RPM:
     (NOTE: the Katello installer may do this step for you.)
     The "noarch" RPM needs to be deployed to the machine working as a
     web server, or RHN Satellite, or RHN Proxy.
-    Presumably %s.""" % repr(d['--set-hostname'])
+    Presumably %s.""" % repr(d['--set-hostname']))
 
     return "%s.noarch.rpm" % serverRpmName
+
 
 # Helper function
 def _copy_file_to_fd(filename, fd):
@@ -955,6 +1006,7 @@ def _copy_file_to_fd(filename, fd):
         os.write(fd, buf)
         count = count + len(buf)
     return count
+
 
 def genServer_dependencies(password, d):
     """ deps for the general --gen-server command.
@@ -973,8 +1025,6 @@ def genServer_dependencies(password, d):
         sys.stderr.write('ERROR: a CA password must be supplied.\n')
         sys.exit(errnoGeneralError)
 
-
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def _main():
     """ main routine """
@@ -1052,39 +1102,39 @@ def main():
     try:
         ret = _main() or 0
     # CA key set errors
-    except GenPrivateCaKeyException, e:
+    except GenPrivateCaKeyException as e:
         writeError(e)
         ret = 10
-    except GenPublicCaCertException, e:
+    except GenPublicCaCertException as e:
         writeError(e)
         ret = 11
-    except GenCaCertRpmException, e:
+    except GenCaCertRpmException as e:
         writeError(e)
         ret = 12
     # server key set errors
-    except GenServerKeyException, e:
+    except GenServerKeyException as e:
         writeError(e)
         ret = 20
-    except GenServerCertReqException, e:
+    except GenServerCertReqException as e:
         writeError(e)
         ret = 21
-    except GenServerCertException, e:
+    except GenServerCertException as e:
         writeError(e)
         ret = 22
-    except GenServerRpmException, e:
+    except GenServerRpmException as e:
         writeError(e)
         ret = 23
     # other errors
-    except CertExpTooShortException, e:
+    except CertExpTooShortException as e:
         writeError(e)
         ret = 30
-    except CertExpTooLongException, e:
+    except CertExpTooLongException as e:
         writeError(e)
         ret = 31
-    except InvalidCountryCodeException, e:
+    except InvalidCountryCodeException as e:
         writeError(e)
         ret = 32
-    except FailedFileDependencyException, e:
+    except FailedFileDependencyException as e:
         # already wrote a nice error message
         msg = """\
 can't find a file that should have been created during an earlier step:
@@ -1093,15 +1143,14 @@ can't find a file that should have been created during an earlier step:
        %s --help""" % (e, os.path.basename(sys.argv[0]))
         writeError(msg)
         ret = 33
-    except KatelloSslToolException, e:
+    except KatelloSslToolException as e:
         writeError(e)
         ret = 100
 
     return ret
 
-#-------------------------------------------------------------------------------
+
 if __name__ == "__main__":
     sys.stderr.write('\nWARNING: intended to be wrapped by another executable\n'
                      '           calling program.\n')
     sys.exit(abs(main() or errnoSuccess))
-#===============================================================================

@@ -15,19 +15,19 @@
 #
 # katello-ssl-tool openssl.cnf style file manipulation class
 
-## FIXME: the logic here is *WAY* too complicated. Need to simplify -taw
+# FIXME: the logic here is *WAY* too complicated. Need to simplify -taw
+from __future__ import print_function
 
-## language imports
+# language imports
 import os
 import sys
 import copy
 import time
 import socket
-import string
 
-## local imports
-from fileutils import cleanupNormPath, rotateFile, rhn_popen, cleanupAbsPath
-from sslToolLib import daysTil18Jan2038, incSerial, fixSerial
+# local imports
+from katello_certs_tools.fileutils import cleanupNormPath, rotateFile, rhn_popen, cleanupAbsPath
+from katello_certs_tools.sslToolLib import daysTil18Jan2038, incSerial, fixSerial
 
 
 # defaults where we can see them (NOTE: directory is figured at write time)
@@ -38,7 +38,7 @@ MACHINENAME = HOSTNAME
 
 CA_KEY_NAME = 'KATELLO-PRIVATE-SSL-KEY'
 CA_CRT_NAME = 'KATELLO-TRUSTED-SSL-CERT'
-CA_CRT_RPM_NAME = string.lower(CA_CRT_NAME)
+CA_CRT_RPM_NAME = CA_CRT_NAME.lower()
 
 BASE_SERVER_RPM_NAME = 'katello-httpd-ssl-key-pair'
 BASE_SERVER_TAR_NAME = 'katello-httpd-ssl-archive'
@@ -60,14 +60,14 @@ def getOption(options, opt):
     """ fetch the value of an options object item
         without blowing up upon obvious errors
     """
-    assert string.find(opt, '-') == -1
+    assert opt.find('-') == -1
     if not options:
         return None
-    if options.__dict__.has_key(opt):
-        #print 'XXX opt, options.__dict__[opt]', opt, options.__dict__[opt]
+    if opt in options.__dict__:
         return options.__dict__[opt]
     else:
         return None
+
 
 def setOption(options, opt, value):
     """ set the value of an options object item
@@ -75,7 +75,7 @@ def setOption(options, opt, value):
     """
     if not options:
         return
-    if options.__dict__.has_key(opt):
+    if opt in options.__dict__:
         options.__dict__[opt] = value
 
 
@@ -92,49 +92,49 @@ def getStartDate_aWeekAgo():
 
 _defs = \
     {
-        '--dir'             : BUILD_DIR,
-        '--ca-key'          : 'KATELLO-PRIVATE-SSL-KEY',
-        '--ca-cert'         : 'KATELLO-TRUSTED-SSL-CERT',
-        '--ca-cert-dir'     : CERT_PATH,
-        '--other-ca-certs'  : None,
-        '--cert-expiration' : int(daysTil18Jan2038()),
-        '--startdate'       : getStartDate_aWeekAgo(),
+        '--dir': BUILD_DIR,
+        '--ca-key': 'KATELLO-PRIVATE-SSL-KEY',
+        '--ca-cert': 'KATELLO-TRUSTED-SSL-CERT',
+        '--ca-cert-dir': CERT_PATH,
+        '--other-ca-certs': None,
+        '--cert-expiration': int(daysTil18Jan2038()),
+        '--startdate': getStartDate_aWeekAgo(),
 
-        '--server-key'      : 'server.key',
-        '--server-cert-req' : 'server.csr',
-        '--server-cert'     : 'server.crt',
-        '--server-cert-dir' : CERT_PATH,
+        '--server-key': 'server.key',
+        '--server-cert-req': 'server.csr',
+        '--server-cert': 'server.crt',
+        '--server-cert-dir': CERT_PATH,
 
-        '--set-country'     : 'US',
-        '--set-common-name' : "",       # these two will never appear
-        '--set-hostname'    : HOSTNAME, # at the same time on the CLI
+        '--set-country': 'US',
+        '--set-common-name': "",     # these two will never appear
+        '--set-hostname': HOSTNAME,  # at the same time on the CLI
 
-        '--ca-cert-rpm'     : CA_CRT_RPM_NAME,
-        '--server-rpm'      : BASE_SERVER_RPM_NAME+'-'+MACHINENAME,
-        '--server-tar'      : BASE_SERVER_TAR_NAME+'-'+MACHINENAME,
-        '--rpm-packager'    : None,
-        '--rpm-vendor'      : None,
+        '--ca-cert-rpm': CA_CRT_RPM_NAME,
+        '--server-rpm': BASE_SERVER_RPM_NAME+'-'+MACHINENAME,
+        '--server-tar': BASE_SERVER_TAR_NAME+'-'+MACHINENAME,
+        '--rpm-packager': None,
+        '--rpm-vendor': None,
     }
 
 _defsCa = copy.copy(_defs)
 _defsCa.update(
     {
-        '--set-state'       : '',
-        '--set-city'        : '',
-        '--set-org'         : '',
-        '--set-org-unit'    : '',
-        '--set-email'       : '',
+        '--set-state': '',
+        '--set-city': '',
+        '--set-org': '',
+        '--set-org-unit': '',
+        '--set-email': '',
     })
 
 
 _defsServer = copy.copy(_defs)
 _defsServer.update(
     {
-        '--set-state'       : 'North Carolina',
-        '--set-city'        : 'Raleigh',
-        '--set-org'         : 'Example Corp. Inc.',
-        '--set-org-unit'    : 'unit',
-        '--set-email'       : 'admin@example.com',
+        '--set-state': 'North Carolina',
+        '--set-city': 'Raleigh',
+        '--set-org': 'Example Corp. Inc.',
+        '--set-org-unit': 'unit',
+        '--set-email': 'admin@example.com',
     })
 
 DEFS = _defsServer
@@ -152,19 +152,19 @@ def figureDEFS_dirs(options):
         once).
     """
 
-    ## fix up the --dir setting
+    # fix up the --dir setting
     DEFS['--dir'] = getOption(options, 'dir') or DEFS['--dir'] or '.'
     DEFS['--dir'] = cleanupNormPath(DEFS['--dir'], dotYN=1)
 
-    ## fix up the --set-hostname and MACHINENAME settings
+    # fix up the --set-hostname and MACHINENAME settings
     DEFS['--set-hostname'] = getOption(options, 'set_hostname') \
-                               or DEFS['--set-hostname'] \
-                               or socket.gethostname()
+        or DEFS['--set-hostname'] \
+        or socket.gethostname()
 
     global MACHINENAME
     MACHINENAME = DEFS['--set-hostname']
 
-    ## remap to options object
+    # remap to options object
     setOption(options, 'dir', DEFS['--dir'])
     setOption(options, 'set_hostname', DEFS['--set-hostname'])
 
@@ -198,18 +198,18 @@ def figureDEFS_CA(options):
             DEFS['--ca-cert'] = 'ca.crt'
 
     DEFS['--cert-expiration'] = getOption(options, 'cert_expiration') \
-                                  or int(daysTil18Jan2038())
+        or int(daysTil18Jan2038())
     DEFS['--ca-cert-rpm'] = getOption(options, 'ca_cert_rpm') \
-                              or CA_CRT_RPM_NAME
+        or CA_CRT_RPM_NAME
 
     DEFS['--rpm-packager'] = getOption(options, 'rpm_packager')
     DEFS['--rpm-vendor'] = getOption(options, 'rpm_vendor')
 
-    if DEFS.has_key('--cert-expiration'):
+    if '--cert-expiration' in DEFS:
         # nothing under 1 day or over # days til 18Jan2038
         if DEFS['--cert-expiration'] < 1:
             DEFS['--cert-expiration'] = 1
-        _maxdays = int(daysTil18Jan2038()) # already rounded
+        _maxdays = int(daysTil18Jan2038())  # already rounded
         if DEFS['--cert-expiration'] > _maxdays:
             DEFS['--cert-expiration'] = _maxdays
 
@@ -227,29 +227,28 @@ def figureDEFS_server(options):
         the server key-pair(set) variables.
     """
 
-    DEFS['--server-key'] = os.path.basename(getOption(options, 'server_key') \
-                             or DEFS['--server-key'] or 'server.key')
-    DEFS['--server-cert-req'] = \
-      os.path.basename(getOption(options, 'server_cert_req') \
-        or DEFS['--server-cert-req'] or 'server.csr')
-    DEFS['--server-cert'] = os.path.basename(getOption(options, 'server_cert')\
-                              or DEFS['--server-cert'] or 'server.crt')
+    DEFS['--server-key'] = os.path.basename(getOption(options, 'server_key')
+                                            or DEFS['--server-key'] or 'server.key')
+    DEFS['--server-cert-req'] = os.path.basename(getOption(options, 'server_cert_req')
+                                                 or DEFS['--server-cert-req'] or 'server.csr')
+    DEFS['--server-cert'] = os.path.basename(getOption(options, 'server_cert')
+                                             or DEFS['--server-cert'] or 'server.crt')
     DEFS['--cert-expiration'] = getOption(options, 'cert_expiration') \
-                                  or int(daysTil18Jan2038()) # already rounded
+        or int(daysTil18Jan2038())  # already rounded
     DEFS['--server-rpm'] = getOption(options, 'server_rpm') \
-                             or BASE_SERVER_RPM_NAME+'-'+MACHINENAME
+        or BASE_SERVER_RPM_NAME+'-'+MACHINENAME
     DEFS['--server-tar'] = getOption(options, 'server_tar') \
-                             or BASE_SERVER_TAR_NAME+'-'+MACHINENAME
+        or BASE_SERVER_TAR_NAME+'-'+MACHINENAME
     DEFS['--server-cert-dir'] = getOption(options, 'server_cert_dir') or DEFS['--server-cert-dir']
 
     DEFS['--rpm-packager'] = getOption(options, 'rpm_packager')
     DEFS['--rpm-vendor'] = getOption(options, 'rpm_vendor')
 
-    if DEFS.has_key('--cert-expiration'):
+    if '--cert-expiration' in DEFS:
         # nothing under 1 day or over # days til 18Jan2038
         if DEFS['--cert-expiration'] < 1:
             DEFS['--cert-expiration'] = 1
-        _maxdays = int(daysTil18Jan2038()) # already rounded
+        _maxdays = int(daysTil18Jan2038())  # already rounded
         if DEFS['--cert-expiration'] > _maxdays:
             DEFS['--cert-expiration'] = _maxdays
 
@@ -269,11 +268,7 @@ def figureDEFS_distinguishing(options):
         First from config file, then from commanline.
     """
 
-    #if options:
-    #    print 'XXX options.__dict__.keys()', options.__dict__.keys()
-    #print 'XXX figureDEFS_distinguishing()'
-
-    ## map the config file settings to the DEFS object
+    # map the config file settings to the DEFS object
     conf = {}
     caYN = '--gen-ca-cert' in sys.argv or '--gen-ca' in sys.argv
     if caYN:
@@ -282,23 +277,21 @@ def figureDEFS_distinguishing(options):
         conf = ConfigFile(os.path.join(DEFS['--dir'], MACHINENAME, SERVER_OPENSSL_CNF_NAME)).parse()
 
     mapping = {
-            'C'            : ('--set-country',),
-            'ST'           : ('--set-state',),
-            'L'            : ('--set-city',),
-            'O'            : ('--set-org',),
-            'OU'           : ('--set-org-unit',),
-            'CN'           : ('--set-common-name',),
-            'emailAddress' : ('--set-email',),
+            'C': ('--set-country',),
+            'ST': ('--set-state',),
+            'L': ('--set-city',),
+            'O': ('--set-org',),
+            'OU': ('--set-org-unit',),
+            'CN': ('--set-common-name',),
+            'emailAddress': ('--set-email',),
               }
 
     # map config file settings to DEFS (see mapping dict above)
     for key in conf.keys():
-        #print 'XXX KEY', key, repr(mapping[key])
         for v in mapping[key]:
             DEFS[v] = conf[key]
-            #print 'XXX DEFS["%s"]' % v, '=', conf[key]
 
-    ## map commanline options to the DEFS object
+    # map commanline options to the DEFS object
     if getOption(options, 'gen_server'):
         DEFS['--purpose'] = 'server'
     if getOption(options, 'gen_client'):
@@ -326,7 +319,7 @@ def figureDEFS_distinguishing(options):
 
     if getOption(options, 'set_email') is not None:
         DEFS['--set-email'] = getOption(options, 'set_email')
-    DEFS['--set-cname'] = getOption(options, 'set_cname') # this is list
+    DEFS['--set-cname'] = getOption(options, 'set_cname')  # this is list
 
     # remap to options object
     setOption(options, 'set_country', DEFS['--set-country'])
@@ -335,7 +328,6 @@ def figureDEFS_distinguishing(options):
     setOption(options, 'set_org', DEFS['--set-org'])
     setOption(options, 'set_org_unit', DEFS['--set-org-unit'])
     setOption(options, 'set_common_name', DEFS['--set-common-name'])
-    #setOption(options, 'set_hostname', DEFS['--set-hostname'])
     setOption(options, 'set_email', DEFS['--set-email'])
     setOption(options, 'set_cname', DEFS['--set-cname'])
 
@@ -457,7 +449,7 @@ def gen_req_alt_names(d, hostname):
     """ generates the alt_names section of the *-openssl.cnf file """
     i = 0
     result = ''
-    dnsname = [ hostname ]
+    dnsname = [hostname]
     if '--set-cname' in d and d['--set-cname']:
         dnsname.extend(d['--set-cname'])
     for name in dnsname:
@@ -465,14 +457,15 @@ def gen_req_alt_names(d, hostname):
         result += "DNS.%d = %s\n" % (i, name)
     return result
 
+
 def gen_req_distinguished_name(d):
     """ generates the req_distinguished section of the *-openssl.cnf file """
 
     s = ""
     keys = ('C', 'ST', 'L', 'O', 'OU', 'CN', 'emailAddress')
     for key in keys:
-        if d.has_key(key) and string.strip(d[key]):
-            s = s + key + (24-len(key))*' ' + '= %s\n' % string.strip(d[key])
+        if key in d and d[key].strip():
+            s = s + key + (24-len(key))*' ' + '= %s\n' % d[key].strip()
         else:
             s = s + '#' + key + (24-len(key))*' ' + '= ""\n'
 
@@ -491,12 +484,12 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     # what serial # is the ca cert using (we need to increment from that)
     ret, outstream, errstream = rhn_popen(['/usr/bin/openssl', 'x509', '-noout',
                                            '-serial', '-in', caCertFilename])
-    out = outstream.read()
+    out = outstream.read().decode()
     outstream.close()
     errstream.read()
     errstream.close()
     assert not ret
-    caSerial = string.split(string.strip(out), '=')
+    caSerial = out.strip().split('=')
     assert len(caSerial) > 1
     caSerial = caSerial[1]
     caSerial = eval('0x'+caSerial)
@@ -505,7 +498,7 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     # serialFilename or 1)
     serial = 1
     if os.path.exists(serialFilename):
-        serial = string.strip(open(serialFilename, 'r').read())
+        serial = open(serialFilename, 'r').read().strip()
         if serial:
             serial = eval('0x'+serial)
         else:
@@ -522,11 +515,11 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     # create the serial file if it doesn't exist
     # write the digits to this file
     open(serialFilename, 'w').write(serial+'\n')
-    os.chmod(serialFilename, 0600)
+    os.chmod(serialFilename, 0o600)
 
     # truncate the index.txt file. Less likely to have unneccessary clashes.
     open(indexFilename, 'w')
-    os.chmod(indexFilename, 0600)
+    os.chmod(indexFilename, 0o600)
     return serial
 
 
@@ -553,36 +546,32 @@ class ConfigFile:
 
         try:
             fo = open(self.filename, 'r')
-        except:
+        except IOError:
             return d
 
         line = fo.readline()
         while line:
-            if string.strip(line) == '[ req_distinguished_name ]':
+            if line.strip() == '[ req_distinguished_name ]':
                 break
             line = fo.readline()
 
-        #genKeys = ['dir']
-        #caKeys = ['private_key', 'certificate',]
         keys = ['C', 'ST', 'L', 'O', 'OU', 'CN',
-                'emailAddress',
-               ]
-        #       ] + caKeys + genKeys
+                'emailAddress']
 
         for s in fo.readlines():
-            s = string.strip(s)
-            if len(s) > 2 and s[0]=='[' and s[-1]==']':
+            s = s.strip()
+            if len(s) > 2 and s[0] == '[' and s[-1] == ']':
                 break
-            split = string.split(s)
+            split = s.split()
             if not split or len(split) < 3:
                 continue
             if split[0] not in keys:
                 continue
-            split = string.split(s, '=')
+            split = s.split('=')
             if len(split) != 2:
                 continue
             for i in range(len(split)):
-                split[i] = string.strip(split[i])
+                split[i] = split[i].strip()
             d[split[0]] = split[1]
 
         return d
@@ -597,7 +586,7 @@ class ConfigFile:
 
         try:
             fo = open(self.filename, 'r')
-        except:
+        except IOError:
             return
 
         if newdir is None:
@@ -609,24 +598,23 @@ class ConfigFile:
 
         line = fo.readline()
         while line:
-            cleanLine = string.strip(line)
+            cleanLine = line.strip()
 
             # is this a label?
             isLabelYN = 0
-            if cleanLine \
-              and (cleanLine[0], cleanLine[-1]) == ('[',']'):
+            if cleanLine and (cleanLine[0], cleanLine[-1]) == ('[', ']'):
                 isLabelYN = 1
 
             if cleanLine == '[ CA_default ]':
                 # we don't care much until we hit this label
                 in_CA_defaultYN = 1
             elif isLabelYN:
-                in_CA_defaultYN = 0 # hit another label
+                in_CA_defaultYN = 0  # hit another label
 
             if in_CA_defaultYN:
-                vector = string.split(line, '=')
+                vector = line.split('=')
                 if len(vector) == 2:
-                    key = string.strip(vector[0])
+                    key = vector[0].strip()
                     if key == 'dir':
                         # we should be OK - short-circuit
                         return
@@ -647,15 +635,15 @@ serial                  = $dir/serial
 
         try:
             rotated = rotateFile(filepath=self.filename, verbosity=verbosity)
-            if verbosity>=0 and rotated:
-                print "Rotated: %s --> %s" % (os.path.basename(self.filename),
-                                              os.path.basename(rotated))
+            if verbosity >= 0 and rotated:
+                print("Rotated: %s --> %s" % (os.path.basename(self.filename),
+                                              os.path.basename(rotated)))
         except ValueError:
             pass
         fo = open(self.filename, 'w')
         fo.write(newfile)
         fo.close()
-        os.chmod(self.filename, 0600)
+        os.chmod(self.filename, 0o600)
 
         return dirSetYN
 
@@ -669,7 +657,7 @@ serial                  = $dir/serial
 
         try:
             fo = open(self.filename, 'r')
-        except:
+        except IOError:
             return
 
         olddir = ''
@@ -681,15 +669,15 @@ serial                  = $dir/serial
 
         line = fo.readline()
         while line:
-            if string.strip(line) == '[ CA_default ]':
+            if line.strip() == '[ CA_default ]':
                 # we don't care much until we hit this label
                 hit_CA_defaultYN = 1
             if hit_CA_defaultYN:
-                vector = string.split(line, '=')
+                vector = line.split('=')
                 if len(vector) == 2:
                     key, value = vector
-                    if string.strip(key) == 'dir':
-                        value = string.strip(value)
+                    if key.strip() == 'dir':
+                        value = value.strip()
                         olddir = value
                         line = '%s= %s\n' % (key, newdir)
                         hit_CA_defaultYN = 0
@@ -701,33 +689,33 @@ serial                  = $dir/serial
 
         try:
             rotated = rotateFile(filepath=self.filename, verbosity=verbosity)
-            if verbosity>=0 and rotated:
-                print "Rotated: %s --> %s" % (os.path.basename(self.filename),
-                                              os.path.basename(rotated))
+            if verbosity >= 0 and rotated:
+                print("Rotated: %s --> %s" % (os.path.basename(self.filename),
+                                              os.path.basename(rotated)))
         except ValueError:
             pass
         fo = open(self.filename, 'w')
         fo.write(newfile)
         fo.close()
-        os.chmod(self.filename, 0600)
+        os.chmod(self.filename, 0o600)
 
     def save(self, d, caYN=0, verbosity=0):
         """ d == commandline dictionary """
 
         mapping = {
-                '--set-country'     : 'C',
-                '--set-state'       : 'ST',
-                '--set-city'        : 'L',
-                '--set-org'         : 'O',
-                '--set-org-unit'    : 'OU',
-                '--set-common-name' : 'CN',
-                '--set-email'       : 'emailAddress',
+                '--set-country': 'C',
+                '--set-state': 'ST',
+                '--set-city': 'L',
+                '--set-org': 'O',
+                '--set-org-unit': 'OU',
+                '--set-common-name': 'CN',
+                '--set-email': 'emailAddress',
                   }
 
         rdn = {}
         for k in d.keys():
-            if mapping.has_key(k):
-                rdn[mapping[k]] = string.strip(d[k])
+            if k in mapping:
+                rdn[mapping[k]] = d[k].strip()
 
         openssl_cnf = ''
         if caYN:
@@ -740,23 +728,22 @@ serial                  = $dir/serial
               % (gen_req_distinguished_name(rdn), d['--purpose'],  gen_req_alt_names(d, rdn['CN']))
 
         try:
-            rotated = rotateFile(filepath=self.filename,verbosity=verbosity)
-            if verbosity>=0 and rotated:
-                print "Rotated: %s --> %s" % (os.path.basename(self.filename),
-                                              os.path.basename(rotated))
+            rotated = rotateFile(filepath=self.filename, verbosity=verbosity)
+            if verbosity >= 0 and rotated:
+                print("Rotated: %s --> %s" % (os.path.basename(self.filename),
+                                              os.path.basename(rotated)))
         except ValueError:
             pass
         fo = open(self.filename, 'w')
         fo.write(openssl_cnf)
         fo.close()
-        os.chmod(self.filename, 0600)
+        os.chmod(self.filename, 0o600)
         return openssl_cnf
 
 
 ##
-## generated RPM "configuration" dumping ground:
+# generated RPM "configuration" dumping ground:
 ##
-
 POST_UNINSTALL_SCRIPT = """\
 if [ \$1 = 0 ]; then
     # The following steps are copied from mod_ssl's postinstall scriptlet
@@ -781,12 +768,8 @@ EOF
     /sbin/service httpd graceful
     exit 0
 fi
-"""
+"""  # noqa: W605, E501
 
 SERVER_RPM_SUMMARY = "Organizational server (httpd) SSL key-pair/key-set."
 CA_CERT_RPM_SUMMARY = ("Organizational public SSL CA certificate "
                        "(client-side).")
-
-
-
-#===============================================================================
