@@ -17,7 +17,7 @@
 #
 # $Id$
 
-## language imports
+from __future__ import print_function
 import os
 import sys
 import string
@@ -25,8 +25,10 @@ import shutil
 import tempfile
 from timeLib import DAY, now, secs2days, secs2years
 
+
 class KatelloSslToolException(Exception):
     """ general exception class for the tool """
+
 
 errnoGeneralError = 1
 errnoSuccess = 0
@@ -80,11 +82,13 @@ def secsTil18Jan2038():
     """ (int) secs til 1 day before the great 32-bit overflow
         We are making it 1 day just to be safe.
     """
-    return int(2L**31 - 1) - now() - DAY
+    return int(2**31 - 1) - now() - DAY
+
 
 def daysTil18Jan2038():
     "(float) days til 1 day before the great 32-bit overflow"
     return secs2days(secsTil18Jan2038())
+
 
 def yearsTil18Jan2038():
     "(float) approximate years til 1 day before the great 32-bit overflow"
@@ -95,10 +99,11 @@ def gendir(directory):
     "makedirs, but only if it doesn't exist first"
     if not os.path.exists(directory):
         try:
-            os.makedirs(directory, 0700)
-        except OSError, e:
-            print "Error: %s" % (e, )
+            os.makedirs(directory, 0o700)
+        except OSError as e:
+            print("Error: %s" % (e, ))
             sys.exit(1)
+
 
 def chdir(newdir):
     "chdir with the previous cwd as the return value"
@@ -108,10 +113,9 @@ def chdir(newdir):
 
 
 class TempDir:
-
     """ temp directory class with a cleanup destructor and method """
 
-    _shutil = shutil # trying to hang onto shutil during garbage collection
+    _shutil = shutil  # trying to hang onto shutil during garbage collection
 
     def __init__(self, suffix='-katello-ssl-tool'):
         "create a temporary directory in /tmp"

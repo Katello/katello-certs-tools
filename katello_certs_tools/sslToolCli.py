@@ -17,16 +17,16 @@
 #
 # $Id$
 
-## FIXME: the logic here is *WAY* too complicated. Need to simplify -taw
+# FIXME: the logic here is *WAY* too complicated. Need to simplify -taw
 
-## language imports
+# language imports
 import os
 import sys
 
-## utitily imports
+# utitily imports
 from optparse import Option, OptionParser, make_option
 
-## local imports
+# local imports
 from sslToolLib import daysTil18Jan2038, yearsTil18Jan2038, \
                        KatelloSslToolException, errnoGeneralError
 from sslToolConfig import figureDEFS_dirs, figureDEFS_CA, figureDEFS_server
@@ -44,64 +44,63 @@ def _getOptionsTree(defs):
         build the options tree dependent on whats on the commandline
     """
 
-    _optCAKeyPassword = make_option('-p', '--password', action='store', type="string", help='CA password or password file location')
-    _optCaKey = make_option('--ca-key', action='store', type="string", help='CA private key filename (default: %s)' % defs['--ca-key'])
-    _optCaCert = make_option('--ca-cert', action='store', type="string", help='CA certificate filename (default: %s)' % defs['--ca-cert'])
-    _optOtherCaCerts = make_option('--other-ca-certs', action='store', type="string", help='Comma separated list of paths to other public CA certificates to be included in ours')
-    _optCaCertDir = make_option('--ca-cert-dir', action='store', type="string", help='Directory to deploy CA cert and key to.')
+    _optCAKeyPassword = make_option('-p', '--password', action='store', type="string", help='CA password or password file location')  # noqa: E501
+    _optCaKey = make_option('--ca-key', action='store', type="string", help='CA private key filename (default: %s)' % defs['--ca-key'])  # noqa: E501
+    _optCaCert = make_option('--ca-cert', action='store', type="string", help='CA certificate filename (default: %s)' % defs['--ca-cert'])  # noqa: E501
+    _optOtherCaCerts = make_option('--other-ca-certs', action='store', type="string", help='Comma separated list of paths to other public CA certificates to be included in ours')  # noqa: E501
+    _optCaCertDir = make_option('--ca-cert-dir', action='store', type="string", help='Directory to deploy CA cert and key to.')  # noqa: E501
 
-    #_optServerKeyPassword = make_option('-p', '--password', action='store', type="string", help='password to generate the web server's SSL private key')
-    _optCertExp = make_option('--cert-expiration', action='store', type="int", help='expiration of certificate (default: %s days)' % (int(defs['--cert-expiration'])))
+    _optCertExp = make_option('--cert-expiration', action='store', type="int", help='expiration of certificate (default: %s days)' % (int(defs['--cert-expiration'])))  # noqa: E501
 
-    _optServerKey = make_option('--server-key', action='store', type="string", help="the web server's SSL private key filename (default: %s)" % defs['--server-key'])
-    _optServerCertReq = make_option('--server-cert-req', action='store', type="string", help="location of the web server's SSL certificate request filename (default: %s)" % defs['--server-cert-req'])
-    _optServerCert = make_option('--server-cert', action='store', type="string", help='the web server SSL certificate filename (default: %s)' % defs['--server-cert'])
-    _optServerCertDir = make_option('--server-cert-dir', action='store', type="string", help='Directory to deploy server cert and key to.')
+    _optServerKey = make_option('--server-key', action='store', type="string", help="the web server's SSL private key filename (default: %s)" % defs['--server-key'])  # noqa: E501
+    _optServerCertReq = make_option('--server-cert-req', action='store', type="string", help="location of the web server's SSL certificate request filename (default: %s)" % defs['--server-cert-req'])  # noqa: E501
+    _optServerCert = make_option('--server-cert', action='store', type="string", help='the web server SSL certificate filename (default: %s)' % defs['--server-cert'])  # noqa: E501
+    _optServerCertDir = make_option('--server-cert-dir', action='store', type="string", help='Directory to deploy server cert and key to.')  # noqa: E501
 
-    _optCaForce = make_option('-f', '--force', action='store_true', help='forcibly create a new CA SSL private key and/or public certificate')
+    _optCaForce = make_option('-f', '--force', action='store_true', help='forcibly create a new CA SSL private key and/or public certificate')  # noqa: E501
 
-    _optCaKeyOnly = make_option('--key-only',    action='store_true', help='(rarely used) only generate a CA SSL private key. Review "--gen-ca --key-only --help" for more information.')
-    _optCaCertOnly = make_option('--cert-only',   action='store_true', help='(rarely used) only generate a CA SSL public certificate. Review "--gen-ca --cert-only --help" for more information.')
+    _optCaKeyOnly = make_option('--key-only',    action='store_true', help='(rarely used) only generate a CA SSL private key. Review "--gen-ca --key-only --help" for more information.')  # noqa: E501
+    _optCaCertOnly = make_option('--cert-only',   action='store_true', help='(rarely used) only generate a CA SSL public certificate. Review "--gen-ca --cert-only --help" for more information.')  # noqa: E501
 
-    _optServerKeyOnly = make_option('--key-only',      action='store_true', help="""(rarely used) only generate the web server's SSL private key. Review "--gen-server --key-only --help" for more information.""")
-    _optServerCertReqOnly = make_option('--cert-req-only', action='store_true', help="""(rarely used) only generate the web server's SSL certificate request. Review "--gen-server --cert-req-only --help" for more information.""")
-    _optServerCertOnly = make_option('--cert-only',     action='store_true', help="""(rarely used) only generate the web server's SSL certificate. Review "--gen-server --cert-only --help" for more information.""")
+    _optServerKeyOnly = make_option('--key-only',      action='store_true', help="""(rarely used) only generate the web server's SSL private key. Review "--gen-server --key-only --help" for more information.""")  # noqa: E501
+    _optServerCertReqOnly = make_option('--cert-req-only', action='store_true', help="""(rarely used) only generate the web server's SSL certificate request. Review "--gen-server --cert-req-only --help" for more information.""")  # noqa: E501
+    _optServerCertOnly = make_option('--cert-only',     action='store_true', help="""(rarely used) only generate the web server's SSL certificate. Review "--gen-server --cert-only --help" for more information.""")  # noqa: E501
 
-    _optCaCertRpm = make_option('--ca-cert-rpm', action='store', type="string", help='(rarely changed) RPM name that houses the CA SSL public certificate (the base filename, not filename-version-release.noarch.rpm).')
-    _optServerRpm = make_option('--server-rpm',  action='store', type="string", help="(rarely changed) RPM name that houses the web server's SSL key set (the base filename, not filename-version-release.noarch.rpm).")
-    _optServerTar = make_option('--server-tar',  action='store', type="string", help="(rarely changed) name of tar archive of the web server's SSL key set and CA SSL public certificate that is used solely by the hosted RHN Proxy installation routines (the base filename, not filename-version-release.tar).")
+    _optCaCertRpm = make_option('--ca-cert-rpm', action='store', type="string", help='(rarely changed) RPM name that houses the CA SSL public certificate (the base filename, not filename-version-release.noarch.rpm).')  # noqa: E501
+    _optServerRpm = make_option('--server-rpm',  action='store', type="string", help="(rarely changed) RPM name that houses the web server's SSL key set (the base filename, not filename-version-release.noarch.rpm).")  # noqa: E501
+    _optServerTar = make_option('--server-tar',  action='store', type="string", help="(rarely changed) name of tar archive of the web server's SSL key set and CA SSL public certificate that is used solely by the hosted RHN Proxy installation routines (the base filename, not filename-version-release.tar).")  # noqa: E501
 
-    _optRpmPackager = make_option('--rpm-packager', action='store', type="string", help='(rarely used) packager of the generated RPM, such as "RHN Admin <rhn-admin@example.com>".')
-    _optRpmVender = make_option('--rpm-vendor',     action='store', type="string", help='(rarely used) vendor of the generated RPM, such as "IS/IT Example Corp.".')
+    _optRpmPackager = make_option('--rpm-packager', action='store', type="string", help='(rarely used) packager of the generated RPM, such as "RHN Admin <rhn-admin@example.com>".')  # noqa: E501
+    _optRpmVender = make_option('--rpm-vendor',     action='store', type="string", help='(rarely used) vendor of the generated RPM, such as "IS/IT Example Corp.".')  # noqa: E501
 
-    _optRpmOnly = make_option('--rpm-only', action='store_true', help='(rarely used) only generate a deployable RPM. (and tar archive if used during the --gen-server step) Review "<baseoption> --rpm-only --help" for more information.')
-    _optNoRpm = make_option('--no-rpm',   action='store_true', help='(rarely used) do everything *except* generate an RPM.')
+    _optRpmOnly = make_option('--rpm-only', action='store_true', help='(rarely used) only generate a deployable RPM. (and tar archive if used during the --gen-server step) Review "<baseoption> --rpm-only --help" for more information.')  # noqa: E501
+    _optNoRpm = make_option('--no-rpm',   action='store_true', help='(rarely used) do everything *except* generate an RPM.')  # noqa: E501
 
-    _optSetHostname = make_option('--set-hostname', action='store', type="string", help='hostname of the web server you are installing the key set on (default: %s)' % repr(defs['--set-hostname']))
+    _optSetHostname = make_option('--set-hostname', action='store', type="string", help='hostname of the web server you are installing the key set on (default: %s)' % repr(defs['--set-hostname']))  # noqa: E501
 
-    _optSetCname = make_option('--set-cname', action='append', type="string", help='cname alias of the web server, can be specified multiple times')
+    _optSetCname = make_option('--set-cname', action='append', type="string", help='cname alias of the web server, can be specified multiple times')  # noqa: E501
 
     _buildRpmOptions = [_optRpmPackager, _optRpmVender, _optRpmOnly]
 
     _genOptions = [
-        make_option('-v','--verbose', action='count', help='be verbose. Accumulative: -vvv means "be *really* verbose".'),
-        make_option('-d','--dir', action='store', help="build directory (default: %s)" % defs['--dir']),
-        make_option('-q','--quiet', action='store_true', help="be quiet. No output."),
+        make_option('-v', '--verbose', action='count', help='be verbose. Accumulative: -vvv means "be *really* verbose".'),
+        make_option('-d', '--dir', action='store', help="build directory (default: %s)" % defs['--dir']),
+        make_option('-q', '--quiet', action='store_true', help="be quiet. No output."),
         ]
 
     _genConfOptions = [
-        make_option('--set-country',  action='store', type="string", help='2 letter country code (default: %s)' % repr(defs['--set-country'])),
-        make_option('--set-state',    action='store', type="string", help='state or province (default: %s)' % repr(defs['--set-state'])),
-        make_option('--set-city',     action='store', type="string", help='city or locality (default: %s)' % repr(defs['--set-city'])),
-        make_option('--set-org',      action='store', type="string", help='organization or company name, such as "Red Hat Inc." (default: %s)' % repr(defs['--set-org'])),
-        make_option('--set-org-unit', action='store', type="string", help='organizational unit, such as "RHN" (default: %s)' % repr(defs['--set-org-unit'])),
-        make_option('--set-email',    action='store', type="string", help='email address (default: %s)' % repr(defs['--set-email'])),
-        make_option('--set-common-name', action='store', type="string", help='common name (default: %s)' % repr(defs['--set-common-name'])),
+        make_option('--set-country',  action='store', type="string", help='2 letter country code (default: %s)' % repr(defs['--set-country'])),  # noqa: E501
+        make_option('--set-state',    action='store', type="string", help='state or province (default: %s)' % repr(defs['--set-state'])),  # noqa: E501
+        make_option('--set-city',     action='store', type="string", help='city or locality (default: %s)' % repr(defs['--set-city'])),  # noqa: E501
+        make_option('--set-org',      action='store', type="string", help='organization or company name, such as "Red Hat Inc." (default: %s)' % repr(defs['--set-org'])),  # noqa: E501
+        make_option('--set-org-unit', action='store', type="string", help='organizational unit, such as "RHN" (default: %s)' % repr(defs['--set-org-unit'])),  # noqa: E501
+        make_option('--set-email',    action='store', type="string", help='email address (default: %s)' % repr(defs['--set-email'])),  # noqa: E501
+        make_option('--set-common-name', action='store', type="string", help='common name (default: %s)' % repr(defs['--set-common-name'])),  # noqa: E501
         ]
 
     _caConfOptions = _genConfOptions
 
-    _serverConfOptions = [ _optSetHostname, _optSetCname ] + _genConfOptions
+    _serverConfOptions = [_optSetHostname, _optSetCname] + _genConfOptions
 
     # CA generation options
     _caOptions = [
@@ -125,13 +124,11 @@ def _getOptionsTree(defs):
 
     # server key generation options
     _serverKeyOptions = [
-        #_optServerKeyPassword,
         _optServerKey,
         ]
 
     # server cert req generation options
     _serverCertReqOptions = [
-        #_optServerKeyPassword,
         _optServerKey,
         _optServerCertReq,
         _optServerCertDir
@@ -144,48 +141,47 @@ def _getOptionsTree(defs):
         _optCaKey,
         _optServerCertReq,
         _optCaCertDir,
-        Option('--startdate',  action='store', type="string", default=defs['--startdate'], help="start date for the web server's SSL certificate validity (format: YYMMDDHHMMSSZ - where Z is a letter; default is 1 week ago: %s)" % defs['--startdate']),
+        Option('--startdate',  action='store', type="string", default=defs['--startdate'], help="start date for the web server's SSL certificate validity (format: YYMMDDHHMMSSZ - where Z is a letter; default is 1 week ago: %s)" % defs['--startdate']),  # noqa: E501
         _optServerCert,
         _optServerCertDir,
         _optCertExp,
         ]
 
     # the base options
-    _optGenCa = make_option('--gen-ca', action='store_true', help='generate a Certificate Authority (CA) key pair and public RPM. Review "--gen-ca --help" for more information.')
-    _optGenServer = make_option("--gen-server", action='store_true', help="""generate the web server's SSL key set, RPM and tar archive. Review "--gen-server --help" for more information.""")
-    _optGenClient = make_option("--gen-client", action='store_true', help="""generate the client SSL key set, RPM and tar archive. Review "--gen-client --help" for more information.""")
-
+    _optGenCa = make_option('--gen-ca', action='store_true', help='generate a Certificate Authority (CA) key pair and public RPM. Review "--gen-ca --help" for more information.')  # noqa: E501
+    _optGenServer = make_option("--gen-server", action='store_true', help="""generate the web server's SSL key set, RPM and tar archive. Review "--gen-server --help" for more information.""")  # noqa: E501
+    _optGenClient = make_option("--gen-client", action='store_true', help="""generate the client SSL key set, RPM and tar archive. Review "--gen-client --help" for more information.""")  # noqa: E501
 
     # CA build option tree set possibilities
     _caSet = [_optGenCa] + _caOptions + _caCertOptions \
-      + _genOptions + [_optCaKeyOnly, _optCaCertOnly] + _buildRpmOptions \
-      + [_optCaCertRpm, _optNoRpm]
+        + _genOptions + [_optCaKeyOnly, _optCaCertOnly] + _buildRpmOptions \
+        + [_optCaCertRpm, _optNoRpm]
     _caKeyOnlySet = [_optGenCa] + _caOptions + _genOptions \
-      + [_optCaKeyOnly]
+        + [_optCaKeyOnly]
     _caCertOnlySet = [_optGenCa] + _caOptions + _caCertOptions \
-      + _genOptions + [_optCaCertOnly]
+        + _genOptions + [_optCaCertOnly]
     _caRpmOnlySet = [_optGenCa, _optCaKey, _optCaCert, _optCaCertDir, _optOtherCaCerts] \
-      + _buildRpmOptions + [_optCaCertRpm] + _genOptions
+        + _buildRpmOptions + [_optCaCertRpm] + _genOptions  # noqa: E501
 
     # server build option tree set possibilities
     _serverSet = [_optGenServer, _optGenClient] + _serverKeyOptions + _serverCertReqOptions \
-      + _serverCertOptions + _serverConfOptions + _genOptions \
-      + [_optServerKeyOnly, _optServerCertReqOnly, _optServerCertOnly, _optServerCertDir] \
-      + _buildRpmOptions + [_optServerRpm, _optServerTar, _optNoRpm]
+        + _serverCertOptions + _serverConfOptions + _genOptions \
+        + [_optServerKeyOnly, _optServerCertReqOnly, _optServerCertOnly, _optServerCertDir] \
+        + _buildRpmOptions + [_optServerRpm, _optServerTar, _optNoRpm]
     _serverKeyOnlySet = [_optGenServer, _optGenClient] + _serverKeyOptions \
-      + _genOptions + [_optServerKeyOnly]
+        + _genOptions + [_optServerKeyOnly]
     _serverCertReqOnlySet = [_optGenServer, _optGenClient] + _serverKeyOptions \
-      + _serverCertReqOptions + _serverConfOptions \
-      + _genOptions + [_optServerCertReqOnly]
+        + _serverCertReqOptions + _serverConfOptions \
+        + _genOptions + [_optServerCertReqOnly]
     _serverCertOnlySet = [_optGenServer, _optGenClient] + _serverCertOptions \
-      + _genOptions + [_optServerCertOnly]
-    _serverRpmOnlySet = [_optGenServer, _optGenClient, _optServerKey, _optServerCertReq, _optServerCert, _optServerCertDir, _optSetHostname, _optSetCname ] \
-      + _buildRpmOptions + [_optServerRpm, _optServerTar] + _genOptions
-     
+        + _genOptions + [_optServerCertOnly]  # noqa: E501
+    _serverRpmOnlySet = [_optGenServer, _optGenClient, _optServerKey, _optServerCertReq, _optServerCert, _optServerCertDir, _optSetHostname, _optSetCname] \
+        + _buildRpmOptions + [_optServerRpm, _optServerTar] + _genOptions  # noqa: E501
+
     optionsTree = {
-        '--gen-ca' : _caSet,
-        '--gen-server' : _serverSet,
-        '--gen-client' : _serverSet,
+        '--gen-ca': _caSet,
+        '--gen-server': _serverSet,
+        '--gen-client': _serverSet,
         }
 
     # quick check about the --*-only options
@@ -241,11 +237,11 @@ def unique(s):
     if not n:
         return []
 
-    l = []
+    append_list = []
     for item in s:
-        if item not in l:
-            l.append(item)
-    return l
+        if item not in append_list:
+            append_list.append(item)
+    return append_list
 
 
 def setIntersection(*sets):
@@ -258,8 +254,7 @@ def setIntersection(*sets):
         return unique(sets[0])
 
     setA = unique(sets[0])
-    #setB = setIntersection(*sets[1:]) # a python 2.* -ism
-    setB = apply(setIntersection, sets[1:], {})
+    setB = setIntersection(sets[1:], {})
 
     inter = []
     for item in setA:
@@ -268,7 +263,7 @@ def setIntersection(*sets):
     return inter
 
 
-## custom usage text
+# custom usage text
 _progName = os.path.basename(sys.argv[0])
 BASE_USAGE = """\
 %s [options]
@@ -350,9 +345,9 @@ def optionParse():
     else:
         reInitDEFS(0)
     ##
-    ## STEP 1: preliminarily parse options
+    # STEP 1: preliminarily parse options
     ##
-    #print 'XXX STEP1'
+    # print 'XXX STEP1'
 
     optionList, usage = _getOptionList(DEFS)
 
@@ -362,20 +357,20 @@ def optionParse():
     options, args = OptionParser(option_list=optionListNoHelp, add_help_option=0).parse_args()
 
     ##
-    ## STEP 2: repopulate DEFS dict based on commandline
-    ##         and the *-openssl.cnf files
+    # STEP 2: repopulate DEFS dict based on commandline
+    #         and the *-openssl.cnf files
     ##
-    #print 'XXX STEP2'
-    figureDEFS_dirs(options)           # build directory structure
-    figureDEFS_CA(options)             # CA key set stuff
-    figureDEFS_server(options)         # server key set stuff
-    figureDEFS_distinguishing(options) # distinguishing name stuff
+    # print 'XXX STEP2'
+    figureDEFS_dirs(options)            # build directory structure
+    figureDEFS_CA(options)              # CA key set stuff
+    figureDEFS_server(options)          # server key set stuff
+    figureDEFS_distinguishing(options)  # distinguishing name stuff
 
     ##
-    ## STEP 3: reparse options again only if --help is in the commandline
-    ##         so that we can give a --help with correct defaults set.
+    # STEP 3: reparse options again only if --help is in the commandline
+    #         so that we can give a --help with correct defaults set.
     ##
-    #print 'XXX STEP3'
+    # print 'XXX STEP3'
 
     if '-h' in sys.argv or '--help' in sys.argv:
         # DEFS should be mapped with new values now... let's reparse the options.
@@ -383,7 +378,6 @@ def optionParse():
         # should be mapped as expected.
         optionList, usage = _getOptionList(DEFS)
         options, args = OptionParser(option_list=optionList, usage=usage).parse_args()
-
 
     # we take no extra commandline arguments that are not linked to an option
     if args:
@@ -396,8 +390,12 @@ def optionParse():
 
 class CertExpTooShortException(KatelloSslToolException):
     "certificate expiration must be at least 1 day"
+
+
 class CertExpTooLongException(KatelloSslToolException):
     "cert expiration cannot be > 1 year before the 32-bit overflow (in days)"
+
+
 class InvalidCountryCodeException(KatelloSslToolException):
     "invalid country code. Probably != 2 characters in length."
 
@@ -429,6 +427,3 @@ def processCommandline():
         options.verbose = 0
 
     return options
-
-
-#===============================================================================

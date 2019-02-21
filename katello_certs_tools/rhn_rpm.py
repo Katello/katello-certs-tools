@@ -13,6 +13,7 @@
 # in this software or its documentation.
 #
 
+from __future__ import print_function
 import os
 import sys
 import rpm
@@ -43,12 +44,13 @@ PGPHASHALGO = {
   7: 'haval-5-160',
   8: 'sha256',
   9: 'sha384',
- 10: 'sha512',
+  10: 'sha512'
 }
 
 
 class InvalidPackageError(Exception):
     pass
+
 
 class RPM_Header:
     "Wrapper class for an rpm header - we need to store a flag is_source"
@@ -73,7 +75,7 @@ class RPM_Header:
 
     def checksum_type(self):
         if self.hdr[rpm.RPMTAG_FILEDIGESTALGO] \
-           and PGPHASHALGO.has_key(self.hdr[rpm.RPMTAG_FILEDIGESTALGO]):
+           and self.hdr[rpm.RPMTAG_FILEDIGESTALGO] in PGPHASHALGO:
             checksum_type = PGPHASHALGO[self.hdr[rpm.RPMTAG_FILEDIGESTALGO]]
         else:
             checksum_type = 'md5'
@@ -103,13 +105,13 @@ class RPM_Header:
             if ret_len < 17:
                 continue
             # Get the key id - hopefully we get it right
-            elif ret_len <= 65: # V3 DSA signature
+            elif ret_len <= 65:  # V3 DSA signature
                 key_id = ret[9:17]
-            elif ret_len <= 72: # V4 DSA signature
+            elif ret_len <= 72:  # V4 DSA signature
                 key_id = ret[18:26]
-            elif ret_len <= 536: # V3 RSA/SHA256 signature
+            elif ret_len <= 536:  # V3 RSA/SHA256 signature
                 key_id = ret[10:18]
-            else: # ret_len <= 543 # V4 RSA/SHA signature
+            else:  # V4 RSA/SHA signature
                 key_id = ret[19:27]
 
             key_id_len = len(key_id)
@@ -118,10 +120,11 @@ class RPM_Header:
             key_format = "%02x" * key_id_len
             key_id = key_format % t
             self.signatures.append({
-                'signature_type'    : sig_type,
-                'key_id'            : key_id,
-                'signature'         : ret,
+                'signature_type': sig_type,
+                'key_id': key_id,
+                'signature': ret
             })
+
 
 def get_header_byte_range(package_file):
     """
@@ -149,6 +152,7 @@ def get_header_byte_range(package_file):
 
     return (header_start, header_end)
 
+
 def get_header_struct_size(package_file):
     """
     Compute the size in bytes of the rpm header struct starting at the current
@@ -175,7 +179,10 @@ def get_header_struct_size(package_file):
 
     return header_size
 
+
 SHARED_TS = None
+
+
 def get_package_header(filename=None, file_stream=None, fd=None):
     """ Loads the package header from a file / stream / file descriptor
         Raises rpm.error if an error is found, or InvalidPacageError if package is
@@ -184,14 +191,14 @@ def get_package_header(filename=None, file_stream=None, fd=None):
     global SHARED_TS
     # XXX Deal with exceptions better
     if (filename is None and file_stream is None and fd is None):
-        raise ValueError, "No parameters passed"
+        raise ValueError("No parameters passed")
 
     if filename is not None:
         f = open(filename)
     elif file_stream is not None:
         f = file_stream
         f.seek(0, 0)
-    else: # fd is not None
+    else:  # fd is not None
         f = None
 
     if f is None:
@@ -210,7 +217,7 @@ def get_package_header(filename=None, file_stream=None, fd=None):
     try:
         hdr = SHARED_TS.hdrFromFdno(file_desc)
         rpm.delMacro('_dbpath')
-    except:
+    except RuntimeError:
         rpm.delMacro('_dbpath')
         raise
 
@@ -219,6 +226,7 @@ def get_package_header(filename=None, file_stream=None, fd=None):
     is_source = hdr[rpm.RPMTAG_SOURCEPACKAGE]
 
     return RPM_Header(hdr, is_source)
+
 
 class MatchIterator:
     def __init__(self, tag_name=None, value=None):
@@ -247,17 +255,19 @@ class MatchIterator:
 
         if hdr is None:
             return None
-        is_source =  hdr[rpm.RPMTAG_SOURCEPACKAGE]
+        is_source = hdr[rpm.RPMTAG_SOURCEPACKAGE]
         return RPM_Header(hdr, is_source)
 
 
 def headerLoad(data):
     hdr = rpm.headerLoad(data)
-    is_source =  hdr[rpm.RPMTAG_SOURCEPACKAGE]
+    is_source = hdr[rpm.RPMTAG_SOURCEPACKAGE]
     return RPM_Header(hdr, is_source)
+
 
 def labelCompare(t1, t2):
     return rpm.labelCompare(t1, t2)
+
 
 def nvre_compare(t1, t2):
     def build_evr(p):
@@ -318,12 +328,12 @@ if __name__ == '__main__':
         h = app_mi.next()
         if not h:
             break
-        print h['name']
+        print(h['name'])
     sys.exit(1)
     app_hdr1 = get_package_header(filename="/tmp/python-1.5.2-42.72.i386.rpm")
-    print dir(app_hdr1)
+    print(dir(app_hdr1))
     # Sources
     app_hdr1 = get_package_header(filename="/tmp/python-1.5.2-42.72.src.rpm")
     app_hdr2 = headerLoad(app_hdr1.unload())
-    print app_hdr2
-    print len(app_hdr2.keys())
+    print(app_hdr2)
+    print(len(app_hdr2.keys()))

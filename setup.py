@@ -1,5 +1,6 @@
 from distutils.core import setup
 
+
 setup(name='Katello Certs Tools',
       version='2.4.0',
       description='Python modules used for Katello SSL tooling',
@@ -8,5 +9,4 @@ setup(name='Katello Certs Tools',
       url='https://fedorahosted.org/katello/',
       packages=['katello_certs_tools'],
       scripts=['katello-ssl-tool', 'katello-sudo-ssl-tool', 'katello-certs-sign', 'katello-certs-gen-rpm'],
-      data_files=[('share/man/man1', ['katello-ssl-tool.1'])]
-)
+      data_files=[('share/man/man1', ['katello-ssl-tool.1'])])

@@ -76,17 +76,15 @@ def rotateFile(filepath, depth=5, suffix='.', verbosity=0):
     """
 
     # check argument sanity (should really be down outside of this function)
-    if not filepath or type(filepath) != type(''):
+    if not filepath or not isinstance(filepath, str):
         raise ValueError("filepath '%s' is not a valid arguement" % filepath)
-    if type(depth) != type(0) or depth < -1 \
-      or depth > sys.maxint-1 or depth == 0:
+    if not isinstance(depth, int) or depth < -1 or depth > sys.maxint-1 or depth == 0:
         raise ValueError("depth must fall within range "
                          "[-1, 1...%s]" % (sys.maxint-1))
 
     # force verbosity to be a numeric value
     verbosity = verbosity or 0
-    if type(verbosity) != type(0) or verbosity < -1 \
-      or verbosity > sys.maxint-1:
+    if not isinstance(verbosity, int) or verbosity < -1 or verbosity > sys.maxint-1:
         raise ValueError('invalid verbosity value: %s' % (verbosity))
 
     filepath = cleanupAbsPath(filepath)
@@ -96,7 +94,6 @@ def rotateFile(filepath, depth=5, suffix='.', verbosity=0):
     pathNSuffix = filepath + suffix
     pathNSuffix1 = pathNSuffix + '1'
 
-
     if verbosity > 1:
         sys.stderr.write("Working dir: %s\n"
                          % os.path.dirname(pathNSuffix))
@@ -104,9 +101,9 @@ def rotateFile(filepath, depth=5, suffix='.', verbosity=0):
     # is there anything to do? (existence, then size, then checksum)
     checksum_type = 'md5'       # FIXME: this should be configuation option
     if os.path.exists(pathNSuffix1) and os.path.isfile(pathNSuffix1) \
-      and os.stat(filepath)[6] == os.stat(pathNSuffix1)[6] \
-      and getFileChecksum(checksum_type, filepath) == \
-          getFileChecksum(checksum_type, pathNSuffix1):
+        and os.stat(filepath)[6] == os.stat(pathNSuffix1)[6] \
+        and getFileChecksum(checksum_type, filepath) == \
+            getFileChecksum(checksum_type, pathNSuffix1):
         # nothing to do
         if verbosity:
             sys.stderr.write("File '%s' is identical to its rotation. "
@@ -164,15 +161,15 @@ def rhn_popen(cmd, progressCallback=None, bufferSize=16384, outputLog=None):
     if cmd_is_list:
         cmd = map(str, cmd)
     c = subprocess.Popen(cmd, bufsize=0, stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                close_fds=True, shell=(not cmd_is_list))
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         close_fds=True, shell=(not cmd_is_list))
 
     # We don't write to the child process
     c.stdin.close()
 
     # Create two temporary streams to hold the info from stdout and stderr
-    child_out = tempfile.TemporaryFile(prefix = '/tmp/my-popen-', mode = 'r+b')
-    child_err = tempfile.TemporaryFile(prefix = '/tmp/my-popen-', mode = 'r+b')
+    child_out = tempfile.TemporaryFile(prefix='/tmp/my-popen-', mode='r+b')
+    child_err = tempfile.TemporaryFile(prefix='/tmp/my-popen-', mode='r+b')
 
     # Map the input file descriptor with the temporary (output) one
     fd_mappings = [(c.stdout, child_out), (c.stderr, child_err)]
