@@ -7,3 +7,6 @@ install:
   - pip install flake8
 script:
   - flake8
+  - mkdir -p ssl-build/$(hostname)
+  - touch ssl-build/$(hostname)/katello-server-openssl.cnf
+  - PYTHONPATH=katello_certs_tools python katello-ssl-tool --help
