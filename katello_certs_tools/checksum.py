@@ -13,63 +13,16 @@
 # in this software or its documentation.
 #
 
-import os
-try:
-    import hashlib
-except ImportError:
-    import md5
-    import sha
-    from Crypto.Hash import SHA256 as sha256
-    # pylint: disable=W0232
-    class hashlib:
-        @staticmethod
-        def new(checksum):
-            if checksum == 'md5':
-                return md5.new()
-            elif checksum == 'sha1':
-                return sha.new()
-            elif checksum == 'sha256':
-                return sha256.new()
-            else:
-                raise ValueError, "Incompatible checksum type"
+import hashlib
 
 
-def getFileChecksum(hashtype, filename=None, fd=None, file_handler=None, buffer_size=None):
+def getFileChecksum(hashtype, filename):
     """ Compute a file's checksum
         Used by rotateFile()
     """
 
-    # python's md5 lib sucks
-    # there's no way to directly import a file.
-    if buffer_size is None:
-        buffer_size = 65536
-
-    if filename is None and fd is None and file is None:
-        raise ValueError("no file specified")
-    if file_handler:
-        f = file
-    elif fd is not None:
-        f = os.fdopen(os.dup(fd), "r")
-    else:
-        f = open(filename, "r")
-    # Rewind it
-    f.seek(0, 0)
     m = hashlib.new(hashtype)
-    while 1:
-        file_buffer = f.read(buffer_size)
-        if not file_buffer:
-            break
-        m.update(file_buffer)
+    with open(filename, "rb") as f:
+        m.update(f.read())
 
-    # cleanup time
-    if file_handler is not None:
-        file_handler.seek(0, 0)
-    else:
-        f.close()
     return m.hexdigest()
-
-
-def getStringChecksum(hashtype, s):
-    """ compute checksum of an arbitrary string """
-    ctx = hashlib.new(hashtype, s)
-    return ctx.hexdigest()
