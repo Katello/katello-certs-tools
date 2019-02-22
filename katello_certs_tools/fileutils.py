@@ -23,7 +23,13 @@ import select
 import tempfile
 import errno
 
-from katello_certs_tools.checksum import getFileChecksum
+
+def _file_contents_match(first, second):
+    if os.path.getsize(first) != os.path.getsize(second):
+        return False
+
+    with open(first) as first_fp, open(second) as second_fp:
+        return first_fp.read() == second_fp.read()
 
 
 def cleanupAbsPath(path):
@@ -102,11 +108,8 @@ def rotateFile(filepath, depth=5, suffix='.', verbosity=0):
                          % os.path.dirname(pathNSuffix))
 
     # is there anything to do? (existence, then size, then checksum)
-    checksum_type = 'md5'       # FIXME: this should be configuation option
     if os.path.exists(pathNSuffix1) and os.path.isfile(pathNSuffix1) \
-        and os.stat(filepath)[6] == os.stat(pathNSuffix1)[6] \
-        and getFileChecksum(checksum_type, filepath) == \
-            getFileChecksum(checksum_type, pathNSuffix1):
+            and _file_contents_match(filepath, pathNSuffix1):
         # nothing to do
         if verbosity:
             sys.stderr.write("File '%s' is identical to its rotation. "
