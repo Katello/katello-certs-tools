@@ -24,7 +24,6 @@ import sys
 import copy
 import time
 import socket
-import string
 
 # local imports
 from fileutils import cleanupNormPath, rotateFile, rhn_popen, cleanupAbsPath
@@ -39,7 +38,7 @@ MACHINENAME = HOSTNAME
 
 CA_KEY_NAME = 'KATELLO-PRIVATE-SSL-KEY'
 CA_CRT_NAME = 'KATELLO-TRUSTED-SSL-CERT'
-CA_CRT_RPM_NAME = string.lower(CA_CRT_NAME)
+CA_CRT_RPM_NAME = CA_CRT_NAME.lower()
 
 BASE_SERVER_RPM_NAME = 'katello-httpd-ssl-key-pair'
 BASE_SERVER_TAR_NAME = 'katello-httpd-ssl-archive'
@@ -61,7 +60,7 @@ def getOption(options, opt):
     """ fetch the value of an options object item
         without blowing up upon obvious errors
     """
-    assert string.find(opt, '-') == -1
+    assert opt.find('-') == -1
     if not options:
         return None
     if opt in options.__dict__:
@@ -465,8 +464,8 @@ def gen_req_distinguished_name(d):
     s = ""
     keys = ('C', 'ST', 'L', 'O', 'OU', 'CN', 'emailAddress')
     for key in keys:
-        if key in d and string.strip(d[key]):
-            s = s + key + (24-len(key))*' ' + '= %s\n' % string.strip(d[key])
+        if key in d and d[key].strip():
+            s = s + key + (24-len(key))*' ' + '= %s\n' % d[key].strip()
         else:
             s = s + '#' + key + (24-len(key))*' ' + '= ""\n'
 
@@ -490,18 +489,18 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     errstream.read()
     errstream.close()
     assert not ret
-    caSerial = string.split(string.strip(out), '=')
+    caSerial = out.strip().split('=')
     assert len(caSerial) > 1
     caSerial = caSerial[1]
-    caSerial = eval('0x'+caSerial)
+    caSerial = int(caSerial, 8)
 
     # initialize the serial value (starting at whatever is in
     # serialFilename or 1)
     serial = 1
     if os.path.exists(serialFilename):
-        serial = string.strip(open(serialFilename, 'r').read())
+        serial = open(serialFilename, 'r').read().strip()
         if serial:
-            serial = eval('0x'+serial)
+            serial = int(serial, 8)
         else:
             serial = 1
 
@@ -510,7 +509,7 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     # as well.
     if serial <= caSerial:
         serial = incSerial(hex(caSerial))
-        serial = eval('0x' + serial)
+        serial = int(serial, 8)
     serial = fixSerial(hex(serial))
 
     # create the serial file if it doesn't exist
@@ -552,7 +551,7 @@ class ConfigFile:
 
         line = fo.readline()
         while line:
-            if string.strip(line) == '[ req_distinguished_name ]':
+            if line.strip() == '[ req_distinguished_name ]':
                 break
             line = fo.readline()
 
@@ -560,19 +559,19 @@ class ConfigFile:
                 'emailAddress']
 
         for s in fo.readlines():
-            s = string.strip(s)
+            s = s.strip()
             if len(s) > 2 and s[0] == '[' and s[-1] == ']':
                 break
-            split = string.split(s)
+            split = s.split()
             if not split or len(split) < 3:
                 continue
             if split[0] not in keys:
                 continue
-            split = string.split(s, '=')
+            split = s.split('=')
             if len(split) != 2:
                 continue
             for i in range(len(split)):
-                split[i] = string.strip(split[i])
+                split[i] = split[i].strip()
             d[split[0]] = split[1]
 
         return d
@@ -599,7 +598,7 @@ class ConfigFile:
 
         line = fo.readline()
         while line:
-            cleanLine = string.strip(line)
+            cleanLine = line.strip()
 
             # is this a label?
             isLabelYN = 0
@@ -613,9 +612,9 @@ class ConfigFile:
                 in_CA_defaultYN = 0  # hit another label
 
             if in_CA_defaultYN:
-                vector = string.split(line, '=')
+                vector = line.split('=')
                 if len(vector) == 2:
-                    key = string.strip(vector[0])
+                    key = vector[0].strip()
                     if key == 'dir':
                         # we should be OK - short-circuit
                         return
@@ -670,16 +669,15 @@ serial                  = $dir/serial
 
         line = fo.readline()
         while line:
-            if string.strip(line) == '[ CA_default ]':
+            if line.strip() == '[ CA_default ]':
                 # we don't care much until we hit this label
                 hit_CA_defaultYN = 1
             if hit_CA_defaultYN:
-                vector = string.split(line, '=')
+                vector = line.split('=')
                 if len(vector) == 2:
                     key, value = vector
-                    if string.strip(key) == 'dir':
-                        value = string.strip(value)
-                        olddir = value
+                    if key.strip() == 'dir':
+                        olddir = value.strip()
                         line = '%s= %s\n' % (key, newdir)
                         hit_CA_defaultYN = 0
                         if newdir == olddir:
@@ -716,7 +714,7 @@ serial                  = $dir/serial
         rdn = {}
         for k in d.keys():
             if k in mapping:
-                rdn[mapping[k]] = string.strip(d[k])
+                rdn[mapping[k]] = d[k].strip()
 
         openssl_cnf = ''
         if caYN:
