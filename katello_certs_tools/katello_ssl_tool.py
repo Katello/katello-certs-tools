@@ -889,20 +889,6 @@ Deploy the server's SSL key pair/set RPM:
     return "%s.noarch.rpm" % serverRpmName
 
 
-# Helper function
-def _copy_file_to_fd(filename, fd):
-    f = open(filename)
-    buffer_size = 16384
-    count = 0
-    while 1:
-        buf = f.read(buffer_size)
-        if not buf:
-            break
-        os.write(fd, buf)
-        count = count + len(buf)
-    return count
-
-
 def genServer_dependencies(password, d):
     """ deps for the general --gen-server command.
         I.e., generation of server.{key,csr,crt}.
