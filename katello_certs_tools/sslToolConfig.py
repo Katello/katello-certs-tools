@@ -484,7 +484,7 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     # what serial # is the ca cert using (we need to increment from that)
     ret, outstream, errstream = rhn_popen(['/usr/bin/openssl', 'x509', '-noout',
                                            '-serial', '-in', caCertFilename])
-    out = outstream.read().decode()
+    out = outstream.read().decode('utf-8')
     outstream.close()
     errstream.read()
     errstream.close()
