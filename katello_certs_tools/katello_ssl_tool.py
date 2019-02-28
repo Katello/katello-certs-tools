@@ -183,7 +183,7 @@ ERROR: a CA private key already exists:
     finally:
         chdir(cwd)
 
-    out = out_stream.read().decode()
+    out = out_stream.read().decode('utf-8')
     out_stream.close()
     err = err_stream.read()
     err_stream.close()
@@ -269,7 +269,7 @@ def genPublicCaCert(password, d, verbosity=0, forceYN=0):
     finally:
         chdir(cwd)
 
-    out = out_stream.read().decode()
+    out = out_stream.read().decode('utf-8')
     out_stream.close()
     err = err_stream.read()
     err_stream.close()
@@ -329,7 +329,7 @@ def genServerKey(d, verbosity=0):
     finally:
         chdir(cwd)
 
-    out = out_stream.read().decode()
+    out = out_stream.read().decode('utf-8')
     out_stream.close()
     err = err_stream.read()
     err_stream.close()
@@ -407,7 +407,7 @@ def genServerCertReq(d, verbosity=0):
     finally:
         chdir(cwd)
 
-    out = out_stream.read().decode()
+    out = out_stream.read().decode('utf-8')
     out_stream.close()
     err = err_stream.read()
     err_stream.close()
@@ -514,7 +514,7 @@ def genServerCert(password, d, verbosity=0):
     finally:
         chdir(cwd)
 
-    out = out_stream.read().decode()
+    out = out_stream.read().decode('utf-8')
     out_stream.close()
     err = err_stream.read()
     err_stream.close()
@@ -662,7 +662,7 @@ Generating CA public certificate RPM:
     chdir(cwd)
     _reenableRpmMacros()
 
-    out = out_stream.read().decode()
+    out = out_stream.read().decode('utf-8')
     out_stream.close()
     err = err_stream.read()
     err_stream.close()
@@ -953,7 +953,7 @@ Generating web server's SSL key pair/set RPM:
         _reenableRpmMacros()
         os.unlink(postun_scriptlet)
 
-    out = out_stream.read().decode()
+    out = out_stream.read().decode('utf-8')
     out_stream.close()
     err = err_stream.read()
     err_stream.close()
