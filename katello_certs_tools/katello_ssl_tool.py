@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 # Copyright 2013 Red Hat, Inc.
 #
@@ -46,7 +45,7 @@ from katello_certs_tools.sslToolCli import processCommandline, CertExpTooShortEx
 
 from katello_certs_tools.sslToolLib import KatelloSslToolException, \
         gendir, chdir, TempDir, \
-        errnoGeneralError, errnoSuccess
+        errnoGeneralError
 
 from katello_certs_tools.fileutils import rotateFile, rhn_popen, cleanupAbsPath
 
@@ -1148,9 +1147,3 @@ can't find a file that should have been created during an earlier step:
         ret = 100
 
     return ret
-
-
-if __name__ == "__main__":
-    sys.stderr.write('\nWARNING: intended to be wrapped by another executable\n'
-                     '           calling program.\n')
-    sys.exit(abs(main() or errnoSuccess))
