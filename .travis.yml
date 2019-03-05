@@ -16,6 +16,4 @@ install:
   - pip install flake8
 script:
   - flake8
-  - docbook2man katello-ssl-tool.sgml
-  - python setup.py install
   - .travis/test.sh
