@@ -306,15 +306,7 @@ def sortRPMs(rpms):
     """ Sorts a list of RPM files. They *must* exist.  """
 
     assert isinstance(rpms, type([]))
-
-    # Build a list of (header, rpm)
-    helper = list(map(lambda x: (get_package_header(x), x), rpms))
-
-    # Sort the list using the headers as a comparison
-    helper = sorted(helper, key=lambda x: hdrLabelCompareKey(x[0]))
-
-    # Extract the rpm names now
-    return list(map(lambda x: x[1], helper))
+    return sorted(rpms, key=lambda rpm: hdrLabelCompareKey(get_package_header(rpm)))
 
 
 def getInstalledHeader(rpmName):
