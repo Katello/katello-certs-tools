@@ -36,7 +36,6 @@ from __future__ import print_function
 import os
 import sys
 import glob
-import shutil
 import getpass
 
 # local imports
@@ -696,26 +695,6 @@ Make the public CA certficate publically available:
     return '%s.noarch.rpm' % clientRpmName
 
 
-def genProxyServerTarball_dependencies(d):
-    """ dependency check for the step that generates RHN Proxy Server's
-        tar archive containing its SSL key set + CA certificate.
-    """
-
-    serverKeySetDir = os.path.join(d['--dir'],
-                                   d['--set-hostname'])
-    gendir(serverKeySetDir)
-
-    ca_cert = pathJoin(d['--dir'], d['--ca-cert'])
-    server_key = pathJoin(serverKeySetDir, d['--server-key'])
-    server_cert = pathJoin(serverKeySetDir, d['--server-cert'])
-    server_cert_req = pathJoin(serverKeySetDir, d['--server-cert-req'])
-
-    dependencyCheck(ca_cert)
-    dependencyCheck(server_key)
-    dependencyCheck(server_cert)
-    dependencyCheck(server_cert_req)
-
-
 def getTarballFilename(d, version='1.0', release='1'):
     """ figure out the current and next tar archive filename
         returns current, next (current can be None)
@@ -750,84 +729,6 @@ def getTarballFilename(d, version='1.0', release='1'):
     next_name = os.path.basename(next_name)
 
     return current, next_name
-
-
-def genProxyServerTarball(d, version='1.0', release='1', verbosity=0):
-    """ generates the RHN Proxy Server's tar archive containing its
-        SSL key set + CA certificate
-    """
-
-    genProxyServerTarball_dependencies(d)
-
-    tarballFilepath = getTarballFilename(d, version, release)[1]
-    tarballFilepath = pathJoin(d['--dir'], tarballFilepath)
-
-    machinename = d['--set-hostname']
-    ca_cert = os.path.basename(d['--ca-cert'])
-    server_key = pathJoin(machinename, d['--server-key'])
-    server_cert = pathJoin(machinename, d['--server-cert'])
-    server_cert_req = pathJoin(machinename, d['--server-cert-req'])
-
-    # build the server tarball
-    args = '/bin/tar -cvf %s %s %s %s %s' \
-           % (repr(os.path.basename(tarballFilepath)), repr(ca_cert),
-              repr(server_key), repr(server_cert), repr(server_cert_req))
-
-    serverKeySetDir = pathJoin(d['--dir'], machinename)
-    tarballFilepath2 = pathJoin(serverKeySetDir, tarballFilepath)
-
-    if verbosity >= 0:
-        print("""
-The most current RHN Proxy Server installation process against RHN hosted
-requires the upload of an SSL tar archive that contains the CA SSL public
-certificate and the web server's key set.
-
-Generating the web server's SSL key set and CA SSL public certificate archive:
-    %s""" % tarballFilepath2)
-
-    cwd = chdir(d['--dir'])
-    try:
-        if verbosity > 0:
-            print("Current working directory:", os.getcwd())
-            print("Commandline:", args)
-        ret, out_stream, err_stream = rhn_popen(args)
-    finally:
-        chdir(cwd)
-
-    out = out_stream.read()
-    out_stream.close()
-    err = err_stream.read()
-    err_stream.close()
-
-    if ret or not os.path.exists(tarballFilepath):
-        os.system("ls -la .")
-        os.system("ls -la ssl-build/")
-        msg = [
-            "CA SSL public certificate & web server's SSL key set tar archive\n",
-            "generation failed: %s\n" % (out),
-            "error: %s" % (err)
-        ]
-        raise GenServerTarException(''.join(msg))
-    if verbosity > 2:
-        if out:
-            print("STDOUT:", out)
-        if err:
-            print("STDERR:", err)
-
-    # root baby!
-    os.chmod(tarballFilepath, 0o600)
-
-    # copy tarball into machine build dir
-    shutil.copy2(tarballFilepath, tarballFilepath2)
-    os.unlink(tarballFilepath)
-    if verbosity > 1:
-        print("""\
-Moved to final home:
-    %s
-    ...moved to...
-    %s""" % (tarballFilepath, tarballFilepath2))
-
-    return tarballFilepath2
 
 
 def genServerRpm_dependencies(d):
