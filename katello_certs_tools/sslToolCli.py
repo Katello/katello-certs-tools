@@ -245,8 +245,7 @@ def unique(s):
 
 
 def setIntersection(list1, list2):
-    """ return the intersection of 0 or more sequences.
-        a teeny bit recursive.
+    """ return the intersection of two sequences.
     """
 
     return list(set(list1).intersection(set(list2)))
