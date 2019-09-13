@@ -138,13 +138,17 @@ def getCAPassword(options, confirmYN=1):
 
 def appendOtherCACerts(d, ca_cert):
     if d['--other-ca-certs']:
-        ca_cert_content = open(cleanupAbsPath(ca_cert)).read()
+        with open(cleanupAbsPath(ca_cert)) as ca_cert_fp:
+            ca_cert_content = ca_cert_fp.read()
+
         for fname in d['--other-ca-certs'].split(','):
             with open(fname) as infile:
                 content = infile.read()
                 if content not in ca_cert_content:
-                    open(cleanupAbsPath(ca_cert), 'a').writelines(content)
-                    ca_cert_content = open(cleanupAbsPath(ca_cert)).read()
+                    ca_cert_content += content
+
+        with open(cleanupAbsPath(ca_cert), 'w') as ca_cert_fp:
+            ca_cert_fp.writelines(content)
 
 
 def genPrivateCaKey(password, d, verbosity=0, forceYN=0):
@@ -286,9 +290,8 @@ def genPublicCaCert(password, d, verbosity=0, forceYN=0):
     appendOtherCACerts(d, ca_cert)
 
     latest_txt = os.path.join(d['--dir'], 'latest.txt')
-    fo = open(latest_txt, 'w')
-    fo.write("%s\n" % ca_cert_name)
-    fo.close()
+    with open(latest_txt, 'w') as latest_fp:
+        latest_fp.write("%s\n" % ca_cert_name)
 
     # permissions:
     os.chmod(ca_cert, 0o644)
@@ -678,11 +681,10 @@ Generating CA public certificate RPM:
 
     # write-out latest.txt information
     latest_txt = os.path.join(d['--dir'], 'latest.txt')
-    fo = open(latest_txt, 'w')
-    fo.write('%s\n' % ca_cert_name)
-    fo.write('%s.noarch.rpm\n' % os.path.basename(clientRpmName))
-    fo.write('%s.src.rpm\n' % os.path.basename(clientRpmName))
-    fo.close()
+    with open(latest_txt, 'w') as latest_fp:
+        latest_fp.write('%s\n' % ca_cert_name)
+        latest_fp.write('%s.noarch.rpm\n' % os.path.basename(clientRpmName))
+        latest_fp.write('%s.src.rpm\n' % os.path.basename(clientRpmName))
     os.chmod(latest_txt, 0o644)
 
     if verbosity >= 0:
@@ -843,7 +845,8 @@ Generating web server's SSL key pair/set RPM:
     if verbosity >= 4:
         print('Current working directory:', os.getcwd())
         print("Writing postun_scriptlet:", postun_scriptlet)
-    open(postun_scriptlet, 'w').write(POST_UNINSTALL_SCRIPT)
+    with open(postun_scriptlet, 'w') as scriptlet_fp:
+        scriptlet_fp.write(POST_UNINSTALL_SCRIPT)
 
     _disableRpmMacros()
     cwd = chdir(serverKeyPairDir)
@@ -872,10 +875,9 @@ Generating web server's SSL key pair/set RPM:
 
     # write-out latest.txt information
     latest_txt = os.path.join(serverKeyPairDir, 'latest.txt')
-    fo = open(latest_txt, 'w')
-    fo.write('%s.noarch.rpm\n' % os.path.basename(serverRpmName))
-    fo.write('%s.src.rpm\n' % os.path.basename(serverRpmName))
-    fo.close()
+    with open(latest_txt, 'w') as latest_fp:
+        latest_fp.write('%s.noarch.rpm\n' % os.path.basename(serverRpmName))
+        latest_fp.write('%s.src.rpm\n' % os.path.basename(serverRpmName))
     os.chmod(latest_txt, 0o600)
 
     if verbosity >= 0:
