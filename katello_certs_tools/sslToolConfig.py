@@ -671,8 +671,7 @@ serial                  = $dir/serial
                 if len(vector) == 2:
                     key, value = vector
                     if key.strip() == 'dir':
-                        value = value.strip()
-                        olddir = value
+                        olddir = value.strip()
                         line = '%s= %s\n' % (key, newdir)
                         hit_CA_defaultYN = 0
                         if newdir == olddir:
