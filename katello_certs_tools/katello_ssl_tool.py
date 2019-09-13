@@ -969,16 +969,11 @@ Generating web server's SSL key pair/set RPM:
 
     os.chmod('%s.noarch.rpm' % serverRpmName, 0o600)
 
-    # generic the tarball necessary for RHN Proxy against hosted installations
-    tarballFilepath = genProxyServerTarball(d, version=ver, release=rel,
-                                            verbosity=verbosity)
-
     # write-out latest.txt information
     latest_txt = os.path.join(serverKeyPairDir, 'latest.txt')
     fo = open(latest_txt, 'w')
     fo.write('%s.noarch.rpm\n' % os.path.basename(serverRpmName))
     fo.write('%s.src.rpm\n' % os.path.basename(serverRpmName))
-    fo.write('%s\n' % os.path.basename(tarballFilepath))
     fo.close()
     os.chmod(latest_txt, 0o600)
 
