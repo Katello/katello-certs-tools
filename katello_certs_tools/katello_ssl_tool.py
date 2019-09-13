@@ -993,9 +993,9 @@ def main():
     def writeError(e):
         sys.stderr.write('\nERROR: %s\n' % e)
 
-    ret = 0
     try:
-        ret = _main() or 0
+        _main()
+        ret = 0
     # CA key set errors
     except GenPrivateCaKeyException as e:
         writeError(e)
@@ -1041,5 +1041,11 @@ can't find a file that should have been created during an earlier step:
     except KatelloSslToolException as e:
         writeError(e)
         ret = 100
+    except KeyboardInterrupt:
+        sys.stderr.write("\nUser interrupted process.\n")
+        ret = 0
+    except:  # noqa
+        sys.stderr.write("\nERROR: unhandled exception occurred:\n")
+        raise
 
-    return ret
+    sys.exit(ret)

@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='Katello Certs Tools',
       version='2.6.1',
@@ -7,5 +7,10 @@ setup(name='Katello Certs Tools',
       author_email='tlestach@redhat.com',
       url='https://github.com/Katello/katello-certs-tools',
       packages=['katello_certs_tools'],
-      scripts=['katello-ssl-tool', 'katello-sudo-ssl-tool', 'katello-certs-sign', 'katello-certs-gen-rpm'],
+      scripts=['katello-sudo-ssl-tool', 'katello-certs-sign', 'katello-certs-gen-rpm'],
+      entry_points={
+          'console_scripts': [
+              'katello-ssl-tool = katello_certs_tools.katello_ssl_tool:main',
+          ],
+      },
       data_files=[('share/man/man1', ['katello-ssl-tool.1'])])

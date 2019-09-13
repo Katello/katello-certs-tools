@@ -7,7 +7,7 @@ export LC_ALL=en_US.UTF-8
 TEST_ON_EL=$([ -f /etc/redhat-release ] && [ -x /usr/bin/yum ] && echo "true" || echo "false")
 
 if [[ "${TEST_ON_EL}" == "true" ]]; then
-  yum install -y docbook-utils openssl rpm-build
+  yum install -y docbook-utils openssl rpm-build python-setuptools
 fi
 
 docbook2man katello-ssl-tool.sgml
