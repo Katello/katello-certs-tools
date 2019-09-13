@@ -30,13 +30,17 @@
 #
 # $Id$
 
-
 # language imports
 from __future__ import print_function
+
+import functools
+import getpass
+import glob
 import os
 import sys
-import glob
-import getpass
+
+# Package imports
+import rpm
 
 # local imports
 from katello_certs_tools.sslToolCli import processCommandline, CertExpTooShortException, \
@@ -47,9 +51,6 @@ from katello_certs_tools.sslToolLib import KatelloSslToolException, \
         errnoGeneralError
 
 from katello_certs_tools.fileutils import rotateFile, rhn_popen, cleanupAbsPath
-
-from katello_certs_tools.rhn_rpm import hdrLabelCompare, sortRPMs, get_package_header, \
-        getInstalledHeader
 
 from katello_certs_tools.sslToolConfig import ConfigFile, figureSerial, getOption, \
         DEFS, MD, CRYPTO, \
@@ -107,6 +108,33 @@ def _getWorkDir():
     if not _workDirObj:
         _workDirObj = TempDir()
     return _workDirObj.getdir()
+
+
+def get_max_rpm_version(package_name, glob_prefix=None):
+    """
+    Get the maximum RPM version for a package name. This looks
+    at the installed packages and globs all noarch packages in
+    the current directory.
+    """
+
+    if not glob_prefix:
+        glob_prefix = package_name
+
+    headers = []
+
+    ts = rpm.TransactionSet()
+
+    # Find installed version
+    headers.extend(ts.dbMatch("name", package_name))
+
+    # find RPMs in the directory
+    filenames = glob.glob("%s-[0-9]*.noarch.rpm" % glob_prefix)
+    headers += [ts.hdrFromFdno(open(filename)) for filename in filenames]
+
+    if not headers:
+        return None
+
+    return max(headers, key=functools.cmp_to_key(rpm.versionCompare))
 
 
 def getCAPassword(options, confirmYN=1):
@@ -595,19 +623,7 @@ def genCaRpm(d, verbosity=0):
     if verbosity >= 0:
         sys.stderr.write("\n...working...")
     # Work out the release number.
-    hdr = getInstalledHeader(ca_cert_rpm)
-
-    # find RPMs in the directory
-    filenames = glob.glob("%s-[0-9]*.noarch.rpm" % ca_cert_rpm)
-    if filenames:
-        filename = sortRPMs(filenames)[-1]
-        h = get_package_header(filename)
-        if hdr is None:
-            hdr = h
-        else:
-            comp = hdrLabelCompare(h, hdr)
-            if comp > 0:
-                hdr = h
+    hdr = get_max_rpm_version(ca_cert_rpm)
 
     ver, rel = '1.0', '0'
     if hdr is not None:
@@ -745,21 +761,7 @@ def genServerRpm(d, verbosity=0):
     if verbosity >= 0:
         sys.stderr.write("\n...working...\n")
 
-    # check for new installed RPM.
-    # Work out the release number.
-    hdr = getInstalledHeader(server_rpm_name)
-
-    # find RPMs in the directory as well.
-    filenames = glob.glob("%s-[0-9]*.noarch.rpm" % server_rpm)
-    if filenames:
-        filename = sortRPMs(filenames)[-1]
-        h = get_package_header(filename)
-        if hdr is None:
-            hdr = h
-        else:
-            comp = hdrLabelCompare(h, hdr)
-            if comp > 0:
-                hdr = h
+    hdr = get_max_rpm_version(server_rpm_name, server_rpm)
 
     ver, rel = '1.0', '0'
     if hdr is not None:
