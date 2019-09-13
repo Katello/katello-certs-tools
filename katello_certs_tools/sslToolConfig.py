@@ -43,12 +43,6 @@ CA_CRT_RPM_NAME = CA_CRT_NAME.lower()
 BASE_SERVER_RPM_NAME = 'katello-httpd-ssl-key-pair'
 BASE_SERVER_TAR_NAME = 'katello-httpd-ssl-archive'
 
-LEGACY_CA_KEY_NAME = 'ca.key'
-LEGACY_CA_CRT_NAME = 'RHNS-CORP-CA-CERT'
-LEGACY_SERVER_RPM_NAME1 = 'rhns-ssl-cert'
-LEGACY_SERVER_RPM_NAME2 = 'rhn-httpd-ssl-key-pair'
-LEGACY_CA_CERT_RPM_NAME = 'rhns-ca-cert'
-
 CA_OPENSSL_CNF_NAME = 'katello-ca-openssl.cnf'
 SERVER_OPENSSL_CNF_NAME = 'katello-server-openssl.cnf'
 
