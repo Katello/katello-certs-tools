@@ -5,7 +5,7 @@ RPM=$HOSTNAME-apache
 CERT=cert.pem
 REQ=cert.req
 KEY=key.pem
-CA=KATELLO-TRUSTED-SSL-CERT
+CA=ca.pem
 
 DIRECTORY=$(mktemp -d)
 trap "rm -rf $DIRECTORY" EXIT
@@ -14,12 +14,9 @@ cd $DIRECTORY
 set -ex
 
 mkdir -p ssl-build/$HOSTNAME
-touch ssl-build/$HOSTNAME/$CERT ssl-build/$HOSTNAME/$REQ ssl-build/$HOSTNAME/$KEY
+touch ssl-build/$HOSTNAME/$CERT ssl-build/$HOSTNAME/$REQ ssl-build/$HOSTNAME/$KEY ssl-build/$CA
 
-# Pretend we've generated a CA
-touch ssl-build/KATELLO-TRUSTED-SSL-CERT
-
-katello-ssl-tool --gen-server --set-hostname $HOSTNAME --server-cert $CERT --server-cert-req $REQ --server-key $KEY --server-rpm $RPM --rpm-only
+katello-ssl-tool --gen-server --set-hostname $HOSTNAME --server-cert $CERT --server-cert-req $REQ --server-key $KEY --ca-cert $CA --server-rpm $RPM --rpm-only
 
 if [[ -x /usr/bin/tree ]] ; then
 	tree

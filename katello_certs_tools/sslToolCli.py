@@ -175,7 +175,7 @@ def _getOptionsTree(defs):
         + _genOptions + [_optServerCertReqOnly]
     _serverCertOnlySet = [_optGenServer, _optGenClient] + _serverCertOptions \
         + _genOptions + [_optServerCertOnly]  # noqa: E501
-    _serverRpmOnlySet = [_optGenServer, _optGenClient, _optServerKey, _optServerCertReq, _optServerCert, _optServerCertDir, _optSetHostname, _optSetCname] \
+    _serverRpmOnlySet = [_optGenServer, _optGenClient, _optServerKey, _optServerCertReq, _optServerCert, _optCaCert, _optServerCertDir, _optSetHostname, _optSetCname] \
         + _buildRpmOptions + [_optServerRpm, _optServerTar] + _genOptions  # noqa: E501
 
     optionsTree = {
