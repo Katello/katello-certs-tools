@@ -185,20 +185,20 @@ def _getOptionsTree(defs):
         }
 
     # quick check about the --*-only options
-    _onlyOpts = ['--key-only', '--cert-req-only', '--cert-only', '--rpm-only']
-    _onlyIntersection = setIntersection(sys.argv, _onlyOpts)
+    _onlyOpts = set(['--key-only', '--cert-req-only', '--cert-only', '--rpm-only'])
+    _onlyIntersection = set(sys.argv) & _onlyOpts
     if len(_onlyIntersection) > 1:
         sys.stderr.write("""\
 ERROR: cannot use these options in combination:
        %s\n""" % repr(_onlyIntersection))
         sys.exit(errnoGeneralError)
-    _onlyIntersection = setIntersection(sys.argv, ['--rpm-only', '--no-rpm'])
+    _onlyIntersection = set(sys.argv) & set(['--rpm-only', '--no-rpm'])
     if len(_onlyIntersection) > 1:
         sys.stderr.write("""\
 ERROR: cannot use these options in combination:
        %s\n""" % repr(_onlyIntersection))
         sys.exit(errnoGeneralError)
-    _onlyIntersection = setIntersection(sys.argv, ['--gen-client', '--gen-server'])
+    _onlyIntersection = set(sys.argv) & set(['--gen-client', '--gen-server'])
     if len(_onlyIntersection) > 1:
         sys.stderr.write("""\
 ERROR: cannot use these options in combination:
@@ -223,32 +223,6 @@ ERROR: cannot use these options in combination:
 
     baseOptions = [_optGenCa, _optGenServer, _optGenClient]
     return optionsTree, baseOptions
-
-
-def unique(s):
-    """ make sure a sequence is unique.
-        Using dead simple method (other faster methods assume too much).
-        Returns a list.
-    """
-
-    assert isinstance(s, list) or isinstance(s, str) or isinstance(s, tuple)
-
-    n = len(s)
-    if not n:
-        return []
-
-    append_list = []
-    for item in s:
-        if item not in append_list:
-            append_list.append(item)
-    return append_list
-
-
-def setIntersection(list1, list2):
-    """ return the intersection of two sequences.
-    """
-
-    return list(set(list1).intersection(set(list2)))
 
 
 # custom usage text
@@ -286,11 +260,12 @@ def _getOptionList(defs):
     optionsList = []
     usage = OTHER_USAGE
 
-    argIntersection = setIntersection(sys.argv, optionsTree.keys())
+    argIntersection = set(sys.argv) & set(optionsTree.keys())
 
     if len(argIntersection) == 1:
-        optionsList = optionsTree[argIntersection[0]]
-        optionsList = unique(optionsList)
+        for option in optionsTree[next(iter(argIntersection))]:
+            if option not in optionsList:
+                optionsList.append(option)
 
     elif len(argIntersection) > 1:
         # disallow multiple base options on the same commandline
