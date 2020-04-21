@@ -184,7 +184,7 @@ ERROR: a CA private key already exists:
 
     out = out_stream.read().decode('utf-8')
     out_stream.close()
-    err = err_stream.read()
+    err = err_stream.read().decode('utf-8')
     err_stream.close()
 
     if ret:
@@ -270,7 +270,7 @@ def genPublicCaCert(password, d, verbosity=0, forceYN=0):
 
     out = out_stream.read().decode('utf-8')
     out_stream.close()
-    err = err_stream.read()
+    err = err_stream.read().decode('utf-8')
     err_stream.close()
 
     if ret:
@@ -330,7 +330,7 @@ def genServerKey(d, verbosity=0):
 
     out = out_stream.read().decode('utf-8')
     out_stream.close()
-    err = err_stream.read()
+    err = err_stream.read().decode('utf-8')
     err_stream.close()
 
     if ret:
@@ -408,7 +408,7 @@ def genServerCertReq(d, verbosity=0):
 
     out = out_stream.read().decode('utf-8')
     out_stream.close()
-    err = err_stream.read()
+    err = err_stream.read().decode('utf-8')
     err_stream.close()
 
     if ret:
@@ -515,7 +515,7 @@ def genServerCert(password, d, verbosity=0):
 
     out = out_stream.read().decode('utf-8')
     out_stream.close()
-    err = err_stream.read()
+    err = err_stream.read().decode('utf-8')
     err_stream.close()
 
     if ret:
@@ -663,7 +663,7 @@ Generating CA public certificate RPM:
 
     out = out_stream.read().decode('utf-8')
     out_stream.close()
-    err = err_stream.read()
+    err = err_stream.read().decode('utf-8')
     err_stream.close()
 
     if ret or not os.path.exists("%s.noarch.rpm" % clientRpmName):
@@ -856,7 +856,7 @@ Generating web server's SSL key pair/set RPM:
 
     out = out_stream.read().decode('utf-8')
     out_stream.close()
-    err = err_stream.read()
+    err = err_stream.read().decode('utf-8')
     err_stream.close()
 
     if ret or not os.path.exists("%s.noarch.rpm" % serverRpmName):

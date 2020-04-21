@@ -480,7 +480,7 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
                                            '-serial', '-in', caCertFilename])
     out = outstream.read().decode('utf-8')
     outstream.close()
-    errstream.read()
+    errstream.read().decode('utf-8')
     errstream.close()
     assert not ret
     caSerial = out.strip().split('=')
