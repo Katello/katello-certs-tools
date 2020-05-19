@@ -599,7 +599,7 @@ def genCaRpm(d, verbosity=0):
     hdr = getInstalledHeader(ca_cert_rpm)
 
     # find RPMs in the directory
-    filenames = glob.glob("%s-*.noarch.rpm" % ca_cert_rpm)
+    filenames = glob.glob("%s-[0-9]*.noarch.rpm" % ca_cert_rpm)
     if filenames:
         filename = sortRPMs(filenames)[-1]
         h = get_package_header(filename)
@@ -784,7 +784,7 @@ def genServerRpm(d, verbosity=0):
     hdr = getInstalledHeader(server_rpm_name)
 
     # find RPMs in the directory as well.
-    filenames = glob.glob("%s-*.noarch.rpm" % server_rpm)
+    filenames = glob.glob("%s-[0-9]*.noarch.rpm" % server_rpm)
     if filenames:
         filename = sortRPMs(filenames)[-1]
         h = get_package_header(filename)
