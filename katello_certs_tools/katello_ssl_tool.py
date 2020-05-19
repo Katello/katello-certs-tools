@@ -38,6 +38,7 @@ import getpass
 import glob
 import os
 import sys
+import subprocess
 
 # Package imports
 import rpm
@@ -47,10 +48,9 @@ from katello_certs_tools.sslToolCli import processCommandline, CertExpTooShortEx
         CertExpTooLongException, InvalidCountryCodeException
 
 from katello_certs_tools.sslToolLib import KatelloSslToolException, \
-        gendir, chdir, TempDir, \
-        errnoGeneralError
+        gendir, chdir, TemporaryDirectory, disabled_rpm_macros, errnoGeneralError
 
-from katello_certs_tools.fileutils import rotateFile, rhn_popen, cleanupAbsPath
+from katello_certs_tools.fileutils import rotateFile, cleanupAbsPath
 
 from katello_certs_tools.sslToolConfig import ConfigFile, figureSerial, getOption, \
         DEFS, MD, CRYPTO, \
@@ -113,14 +113,15 @@ def pathJoin(path, filename):
     return os.path.join(path, filename)
 
 
-_workDirObj = None
+def _fill_password(command, password, placeholder='pass:%s'):
+    cmd = command.copy()
+    cmd[command.index(placeholder)] = placeholder % password
+    return cmd
 
 
-def _getWorkDir():
-    global _workDirObj
-    if not _workDirObj:
-        _workDirObj = TempDir()
-    return _workDirObj.getdir()
+def _run_command(command):
+    with TemporaryDirectory('-katello-certs-tools') as workdir, chdir(workdir):
+        return subprocess.check_output(command)
 
 
 def get_max_rpm_version(package_name, glob_prefix=None):
@@ -217,26 +218,14 @@ ERROR: a CA private key already exists:
     except ValueError:
         pass
 
-    cwd = chdir(_getWorkDir())
     try:
-        ret, out_stream, err_stream = rhn_popen(args % repr(password))
-    finally:
-        chdir(cwd)
-
-    out = out_stream.read().decode('utf-8')
-    out_stream.close()
-    err = err_stream.read().decode('utf-8')
-    err_stream.close()
-
-    if ret:
+        out = _run_command(args % repr(password))
+    except subprocess.CalledProcessError as exception:
         raise GenPrivateCaKeyException("Certificate Authority private SSL "
                                        "key generation failed:\n%s\n%s"
-                                       % (out, err))
-    if verbosity > 2:
-        if out:
-            print("STDOUT:", out)
-        if err:
-            print("STDERR:", err)
+                                       % (exception.stdout, exception.stderr))
+    if verbosity > 2 and out:
+        print("STDOUT:", out)
 
     # permissions:
     os.chmod(ca_key, 0o600)
@@ -269,12 +258,19 @@ ERROR: a CA public certificate already exists:
         del d['--set-hostname']
     configFile.save(d, caYN=1, verbosity=verbosity)
 
-    args = ("/usr/bin/openssl req -passin pass:%s -config %s "
-            "-new -x509 -days %s -%s -key %s -out %s"
-            % ('%s', repr(cleanupAbsPath(configFile.filename)),
-               repr(d['--cert-expiration']),
-               MD, repr(cleanupAbsPath(ca_key)),
-               repr(cleanupAbsPath(ca_cert))))
+    command = [
+        "/usr/bin/openssl",
+        "req",
+        "-passin", "pass:%s",
+        "-text",
+        "-config", cleanupAbsPath(configFile.filename),
+        "-new",
+        "-x509",
+        "-days", d['--cert-expiration'],
+        "-%s" % MD,
+        "-key", cleanupAbsPath(ca_key),
+        "-out", cleanupAbsPath(ca_cert),
+    ]
 
     if verbosity >= 0:
         print("\nGenerating public CA certificate: %s" % ca_cert)
@@ -283,7 +279,7 @@ ERROR: a CA public certificate already exists:
                   '--set-org-unit', '--set-common-name', '--set-email'):
             print('    %s%s = "%s"' % (k, ' '*(18-len(k)), d[k]))
         if verbosity > 1:
-            print("Commandline:", args % "PASSWORD")
+            print("Commandline: %r", _fill_password(command, 'PASSWORD'))
 
     try:
         rotated = rotateFile(filepath=ca_cert, verbosity=verbosity)
@@ -293,26 +289,14 @@ ERROR: a CA public certificate already exists:
     except ValueError:
         pass
 
-    cwd = chdir(_getWorkDir())
     try:
-        ret, out_stream, err_stream = rhn_popen(args % repr(password))
-    finally:
-        chdir(cwd)
-
-    out = out_stream.read().decode('utf-8')
-    out_stream.close()
-    err = err_stream.read().decode('utf-8')
-    err_stream.close()
-
-    if ret:
+        out = _run_command(_fill_password(command, password))
+    except subprocess.CalledProcessError as exception:
         raise GenPublicCaCertException("Certificate Authority public "
                                        "SSL certificate generation failed:\n%s\n"
-                                       "%s" % (out, err))
-    if verbosity > 2:
-        if out:
-            print("STDOUT:", out)
-        if err:
-            print("STDERR:", err)
+                                       "%s" % (exception.stdout, exception.stderr))
+    if verbosity > 2 and out:
+        print("STDOUT:", out)
 
     appendOtherCACerts(d, ca_cert)
 
@@ -335,14 +319,19 @@ def genServerKey(d, verbosity=0):
     server_key = os.path.join(serverKeyPairDir,
                               os.path.basename(d['--server-key']))
 
-    args = ("/usr/bin/openssl genpkey -out %s -algorithm rsa -pkeyopt rsa_keygen_bits:4096"
-                % (repr(cleanupAbsPath(server_key))))
+    command = [
+            "/usr/bin/openssl",
+            "genpkey",
+            "-out", cleanupAbsPath(server_key),
+            "-algorithm", "rsa",
+            "-pkeyopt", "rsa_keygen_bits:4096",
+    ]
 
     # generate the server key
     if verbosity >= 0:
         print("\nGenerating the web server's SSL private key: %s" % server_key)
         if verbosity > 1:
-            print("Commandline:", args)
+            print("Commandline: %r" % command)
 
     try:
         rotated = rotateFile(filepath=server_key, verbosity=verbosity)
@@ -352,25 +341,14 @@ def genServerKey(d, verbosity=0):
     except ValueError:
         pass
 
-    cwd = chdir(_getWorkDir())
     try:
-        ret, out_stream, err_stream = rhn_popen(args)
-    finally:
-        chdir(cwd)
-
-    out = out_stream.read().decode('utf-8')
-    out_stream.close()
-    err = err_stream.read().decode('utf-8')
-    err_stream.close()
-
-    if ret:
+        out = _run_command(command)
+    except subprocess.CalledProcessError as exception:
         raise GenServerKeyException("web server's SSL key generation failed:\n%s\n%s"
-                                    % (out, err))
-    if verbosity > 2:
-        if out:
-            print("STDOUT:", out)
-        if err:
-            print("STDERR:", err)
+                                    % (exception.stdout, exception.stderr))
+
+    if verbosity > 2 and out:
+        print("STDOUT:", out)
 
     # permissions:
     os.chmod(server_key, 0o600)
@@ -420,26 +398,15 @@ def genServerCertReq(d, verbosity=0):
     except ValueError:
         pass
 
-    cwd = chdir(_getWorkDir())
     try:
-        ret, out_stream, err_stream = rhn_popen(args)
-    finally:
-        chdir(cwd)
-
-    out = out_stream.read().decode('utf-8')
-    out_stream.close()
-    err = err_stream.read().decode('utf-8')
-    err_stream.close()
-
-    if ret:
+        out = _run_command(args)
+    except subprocess.CalledProcessError as exception:
         raise GenServerCertReqException(
-                "web server's SSL certificate request generation "
-                "failed:\n%s\n%s" % (out, err))
-    if verbosity > 2:
-        if out:
-            print("STDOUT:", out)
-        if err:
-            print("STDERR:", err)
+            "web server's SSL certificate request generation "
+            "failed:\n%s\n%s" % (exception.stdout, exception.stderr))
+
+    if verbosity > 2 and out:
+        print("STDOUT:", out)
 
     # permissions:
     os.chmod(server_cert_req, 0o600)
@@ -485,21 +452,26 @@ def genServerCert(password, d, verbosity=0):
     configFile = ConfigFile(ca_openssl_cnf)
     configFile.updateDir()
 
-    args = ("/usr/bin/openssl ca -extensions req_%s_x509_extensions -passin pass:%s -outdir ./ -config %s "
-            "-in %s -batch -cert %s -keyfile %s -startdate %s -days %s "
-            "-md %s -out %s"
-            % (purpose,
-               '%s', repr(cleanupAbsPath(ca_openssl_cnf)),
-               repr(cleanupAbsPath(server_cert_req)),
-               repr(cleanupAbsPath(ca_cert)),
-               repr(cleanupAbsPath(ca_key)), d['--startdate'],
-               repr(d['--cert-expiration']), MD,
-               repr(cleanupAbsPath(server_cert))))
+    command = [
+        "/usr/bin/openssl", "ca", "-batch",
+        "-extensions", "req_%s_x509_extensions" % purpose,
+        "-passin", "pass:%s",
+        "-outdir", "./",
+        "-config", cleanupAbsPath(ca_openssl_cnf),
+        "-in", cleanupAbsPath(server_cert_req),
+        "-cert", cleanupAbsPath(ca_cert),
+        "-keyfile", cleanupAbsPath(ca_key),
+        "-startdate", d['--startdate'],
+        "-days", d['--cert-expiration'],
+        "-md", MD,
+        "-out", cleanupAbsPath(server_cert),
+    ]
+
 
     if verbosity >= 0:
         print("\nGenerating/signing web server's SSL certificate: %s" % d['--server-cert'])
         if verbosity > 1:
-            print("Commandline:", args % 'PASSWORD')
+            print("Commandline: %r", _fill_password(command, 'PASSWORD'))
     try:
         rotated = rotateFile(filepath=server_cert, verbosity=verbosity)
         if verbosity >= 0 and rotated:
@@ -508,35 +480,23 @@ def genServerCert(password, d, verbosity=0):
     except ValueError:
         pass
 
-    cwd = chdir(_getWorkDir())
     try:
-        ret, out_stream, err_stream = rhn_popen(args % repr(password))
-    finally:
-        chdir(cwd)
-
-    out = out_stream.read().decode('utf-8')
-    out_stream.close()
-    err = err_stream.read().decode('utf-8')
-    err_stream.close()
-
-    if ret:
+        out = _run_command(_fill_password(command, password))
+    except subprocess.CalledProcessError as exception:
+        err = exception.stderr
         # signature for a mistyped CA password
         if "unable to load CA private key" in err \
           and "error:0906A065:PEM routines:PEM_do_header:bad decrypt:pem_lib.c" in err \
           and "error:06065064:digital envelope routines:EVP_DecryptFinal:bad decrypt:evp_enc.c" in err:
             raise GenServerCertException(
-                    "web server's SSL certificate generation/signing "
-                    "failed:\nDid you mistype your CA password?")
-        else:
-            raise GenServerCertException(
-                    "web server's SSL certificate generation/signing "
-                    "failed:\n%s\n%s" % (out, err))
+                "web server's SSL certificate generation/signing failed:\n"
+                "Did you mistype your CA password?")
 
-    if verbosity > 2:
-        if out:
-            print("STDOUT:", out)
-        if err:
-            print("STDERR:", err)
+        raise GenServerCertException("web server's SSL certificate generation/signing failed:\n"
+                                     "%s\n%s" % (exception.stdout, err))
+
+    if verbosity > 2 and out:
+        print("STDOUT:", out)
 
     # permissions:
     os.chmod(server_cert, 0o644)
@@ -557,20 +517,6 @@ def genServerCert(password, d, verbosity=0):
         os.unlink(serial + '.old')
     except OSError:
         pass
-
-
-def _disableRpmMacros():
-    mac = cleanupAbsPath('~/.rpmmacros')
-    macTmp = cleanupAbsPath('~/RENAME_ME_BACK_PLEASE-lksjdflajsd.rpmmacros')
-    if os.path.exists(mac):
-        os.rename(mac, macTmp)
-
-
-def _reenableRpmMacros():
-    mac = cleanupAbsPath('~/.rpmmacros')
-    macTmp = cleanupAbsPath('~/RENAME_ME_BACK_PLEASE-lksjdflajsd.rpmmacros')
-    if os.path.exists(macTmp):
-        os.rename(macTmp, mac)
 
 
 def genCaRpm(d, verbosity=0):
@@ -609,23 +555,16 @@ def genCaRpm(d, verbosity=0):
     # build the CA certificate RPM
     args = [
         'katello-certs-gen-rpm',
-        "--name %s",
-        "--version %s",
-        "--release %s",
-        "--packager %s",
-        "--vendor %s",
-        "--group 'Applications/System'",
-        "--summary %s",
-        "--description %s",
-        os.path.join(ca_cert_path, "%s=%s")
+        '--name', ca_cert_rpm_name,
+        '--version', ver,
+        '--release', rel,
+        '--packager', d['--rpm-packager'],
+        '--vendor', d['--rpm-vendor'],
+        '--group', 'Applications/System',
+        '--summary', CA_CERT_RPM_SUMMARY,
+        '--description', CA_CERT_RPM_SUMMARY,
+        os.path.join(ca_cert_path, "%s=%s" % (ca_cert_name, cleanupAbsPath(ca_cert))),
     ]
-
-    args = " ".join(args)
-
-    args = args % ((repr(ca_cert_rpm_name), ver, rel, repr(d['--rpm-packager']),
-                    repr(d['--rpm-vendor']), repr(CA_CERT_RPM_SUMMARY),
-                    repr(CA_CERT_RPM_SUMMARY), repr(ca_cert_name),
-                    repr(cleanupAbsPath(ca_cert))))
 
     clientRpmName = '%s-%s-%s' % (ca_cert_rpm, ver, rel)
     if verbosity >= 0:
@@ -636,16 +575,9 @@ Generating CA public certificate RPM:
         if verbosity > 1:
             print("Commandline:", args)
 
-    _disableRpmMacros()
-    cwd = chdir(d['--dir'])
-    try:
+    # TODO: fix
+    with chdir(d['--dir']), disabled_rpm_macros():
         ret, out_stream, err_stream = rhn_popen(args)
-    except Exception:
-        chdir(cwd)
-        _reenableRpmMacros()
-        raise
-    chdir(cwd)
-    _reenableRpmMacros()
 
     out = out_stream.read().decode('utf-8')
     out_stream.close()
@@ -731,34 +663,33 @@ server with this hostname: %s
 """ % d['--set-hostname']
 
     # build the server RPM
-    args = [
+    command = [
         'katello-certs-gen-rpm',
-        "--name %s --version %s --release %s --packager %s --vendor %s ",
-        "--group 'Applications/System' --summary %s --description %s --postun %s ",
-        server_cert_dir + "/private/%s:0600=%s ",
-        server_cert_dir + "/certs/%s=%s ",
-        server_cert_dir + "/certs/%s=%s "
+        '--name', server_rpm_name,
+        '--version', ver,
+        '--release', rel,
+        '--packager', d['--rpm-packager'],
+        '--vendor', d['--rpm-vendor'],
+        '--group', 'Applications/System',
+        '--summary', SERVER_RPM_SUMMARY,
+        '--description', description,
+        '--postun', cleanupAbsPath(postun_scriptlet),
+        server_cert_dir + "/private/%s:0600=%s" % (server_key_name, cleanupAbsPath(server_key)),
+        server_cert_dir + "/certs/%s=%s" % (server_cert_req_name, cleanupAbsPath(server_cert_req)),
+        server_cert_dir + "/certs/%s=%s" % (server_cert_name, cleanupAbsPath(server_cert)),
     ]
 
-    args = " ".join(args)
-
-    args = args % (repr(server_rpm_name), ver, rel, repr(d['--rpm-packager']),
-                   repr(d['--rpm-vendor']),
-                   repr(SERVER_RPM_SUMMARY), repr(description),
-                   repr(cleanupAbsPath(postun_scriptlet)),
-                   repr(server_key_name), repr(cleanupAbsPath(server_key)),
-                   repr(server_cert_req_name), repr(cleanupAbsPath(server_cert_req)),
-                   repr(server_cert_name), repr(cleanupAbsPath(server_cert))
-                   )
-    serverRpmName = "%s-%s-%s" % (server_rpm, ver, rel)
+    rpm_name = "%s-%s-%s" % (server_rpm, ver, rel)
+    rpm_src = '%s.src.rpm' % rpm_name
+    rpm_noarch = '%snoarch.rpm' % rpm_name
 
     if verbosity >= 0:
         print("""
 Generating web server's SSL key pair/set RPM:
-    %s.src.rpm
-    %s.noarch.rpm""" % (serverRpmName, serverRpmName))
+    %s
+    %s.noarch.rpm""" % (rpm_src, rpm_noarch))
         if verbosity > 1:
-            print("Commandline:", args)
+            print("Commandline:", repr(command))
 
     if verbosity >= 4:
         print('Current working directory:', os.getcwd())
@@ -766,36 +697,28 @@ Generating web server's SSL key pair/set RPM:
     with open(postun_scriptlet, 'w') as scriptlet_fp:
         scriptlet_fp.write(POST_UNINSTALL_SCRIPT)
 
-    _disableRpmMacros()
-    cwd = chdir(serverKeyPairDir)
-    try:
-        ret, out_stream, err_stream = rhn_popen(args)
-    finally:
-        chdir(cwd)
-        _reenableRpmMacros()
-        os.unlink(postun_scriptlet)
+    with chdir(serverKeyPairDir), disabled_rpm_macros():
+        try:
+            out = subprocess.check_output(command)
+        except subprocess.CalledProcessError as exc:
+            raise GenServerRpmException("web server's SSL key set RPM generation "
+                                        "failed:\n%s\n%s" % (exc.stdout, exc.stderr))
+        finally:
+            os.unlink(postun_scriptlet)
 
-    out = out_stream.read().decode('utf-8')
-    out_stream.close()
-    err = err_stream.read().decode('utf-8')
-    err_stream.close()
+    if not os.path.exists(rpm_noarch):
+        raise GenServerRpmException('%s was not generated; command output: %s' % (rpm_noarch, out))
 
-    if ret or not os.path.exists("%s.noarch.rpm" % serverRpmName):
-        raise GenServerRpmException("web server's SSL key set RPM generation "
-                                    "failed:\n%s\n%s" % (out, err))
-    if verbosity > 2:
-        if out:
-            print("STDOUT:", out)
-        if err:
-            print("STDERR:", err)
+    if verbosity > 2 and out:
+        print("STDOUT:", out)
 
-    os.chmod('%s.noarch.rpm' % serverRpmName, 0o600)
+    os.chmod(rpm_noarch, 0o600)
 
     # write-out latest.txt information
     latest_txt = os.path.join(serverKeyPairDir, 'latest.txt')
     with open(latest_txt, 'w') as latest_fp:
-        latest_fp.write('%s.noarch.rpm\n' % os.path.basename(serverRpmName))
-        latest_fp.write('%s.src.rpm\n' % os.path.basename(serverRpmName))
+        latest_fp.write('%s\n' % os.path.basename(rpm_noarch))
+        latest_fp.write('%s\n' % os.path.basename(rpm_src))
     os.chmod(latest_txt, 0o600)
 
     if verbosity >= 0:
@@ -806,7 +729,7 @@ Deploy the server's SSL key pair/set RPM:
     web server, or RHN Satellite, or RHN Proxy.
     Presumably %s.""" % repr(d['--set-hostname']))
 
-    return "%s.noarch.rpm" % serverRpmName
+    return rpm_noarch
 
 
 def genServerCert_dependencies(password, d):

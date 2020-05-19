@@ -18,9 +18,9 @@
 # $Id$
 
 from __future__ import print_function
+import contextlib
 import os
 import sys
-import shutil
 import tempfile
 
 from katello_certs_tools.timeLib import DAY, now, secs2days, secs2years
@@ -90,36 +90,73 @@ def gendir(directory):
             sys.exit(1)
 
 
+@contextlib.contextmanager
+def disabled_rpm_macros():
+    directory = os.path.expanduser('~')
+    macros = os.path.join(directory, '.rpmmacros')
+    if os.path.exists(macros):
+        yield
+    else:
+        fd, temporary_file = tempfile.mkstemp(prefix='RENAME_ME_BACK_PLEASE',
+                                              suffix='.rpmmacros', dir=directory)
+        fd.close()
+        os.rename(macros, temporary_file)
+        try:
+            yield
+        finally:
+            os.rename(temporary_file, macros)
+
+
+@contextlib.contextmanager
 def chdir(newdir):
-    "chdir with the previous cwd as the return value"
+    "A context manager to temporarily work in another directory"
     cwd = os.getcwd()
-    os.chdir(newdir)
-    return cwd
+    try:
+        os.chdir(newdir)
+    finally:
+        os.chdir(cwd)
 
 
-class TempDir:
-    """ temp directory class with a cleanup destructor and method """
+try:
+    TemporaryDirectory = tempfile.TemporaryDirectory
+except AttributeError:
+    # Python 3.2 introduced TemporaryDirectory but copied here for Python 2.7
+    import shutil as _shutil
+    import warnings as _warnings
+    import weakref as _weakref
 
-    _shutil = shutil  # trying to hang onto shutil during garbage collection
+    class TemporaryDirectory(object):
+        """Create and return a temporary directory.  This has the same
+        behavior as mkdtemp but can be used as a context manager.  For
+        example:
 
-    def __init__(self, suffix='-katello-ssl-tool'):
-        "create a temporary directory in /tmp"
+            with TemporaryDirectory() as tmpdir:
+                ...
 
-        if suffix.find('/') != -1:
-            raise ValueError("suffix cannot be a path, only a name")
+        Upon exiting the context, the directory and everything contained
+        in it are removed.
+        """
 
-        # add some quick and dirty randomness to the tempfilename
-        s = ''
-        while len(s) < 10:
-            s = s + str(ord(os.urandom(1)))
-        self.path = tempfile.mkdtemp(suffix='-'+s+suffix)
+        def __init__(self, suffix=None, prefix=None, dir=None):
+            self.name = tempfile.mkdtemp(suffix, prefix, dir)
+            self._finalizer = _weakref.finalize(
+                self, self._cleanup, self.name,
+                warn_message="Implicitly cleaning up {!r}".format(self))
 
-    def getdir(self):
-        return self.path
-    getpath = getdir
+        @classmethod
+        def _cleanup(cls, name, warn_message):
+            _shutil.rmtree(name)
+            _warnings.warn(warn_message, ResourceWarning)
 
-    def __del__(self):
-        """ delete temporary directory when done with it """
-        self._shutil.rmtree(self.path)
+        def __repr__(self):
+            return "<{} {!r}>".format(self.__class__.__name__, self.name)
 
-    close = __del__
+        def __enter__(self):
+            return self.name
+
+        def __exit__(self, exc, value, tb):
+            self.cleanup()
+
+        def cleanup(self):
+            if self._finalizer.detach():
+                _shutil.rmtree(self.name)
