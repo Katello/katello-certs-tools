@@ -7,7 +7,7 @@ setup(name='Katello Certs Tools',
       author_email='tlestach@redhat.com',
       url='https://github.com/Katello/katello-certs-tools',
       packages=['katello_certs_tools'],
-      scripts=['katello-sudo-ssl-tool', 'katello-certs-sign', 'katello-certs-gen-rpm'],
+      scripts=['katello-certs-sign', 'katello-certs-gen-rpm'],
       entry_points={
           'console_scripts': [
               'katello-ssl-tool = katello_certs_tools.katello_ssl_tool:main',
