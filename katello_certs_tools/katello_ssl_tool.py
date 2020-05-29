@@ -242,12 +242,19 @@ ERROR: a CA private key already exists:
     os.chmod(ca_key, 0o600)
 
 
-def genPublicCaCert_dependencies(password, d, forceYN=0):
+def genPublicCaCert(password, d, verbosity=0, forceYN=0):
     """ public CA certificate (client-side) generation """
 
+    passwordCheck(password)
+
     gendir(d['--dir'])
+
     ca_key = os.path.join(d['--dir'], os.path.basename(d['--ca-key']))
-    ca_cert = os.path.join(d['--dir'], os.path.basename(d['--ca-cert']))
+    dependencyCheck(ca_key)
+
+    ca_cert_name = os.path.basename(d['--ca-cert'])
+    ca_cert = os.path.join(d['--dir'], ca_cert_name)
+    ca_openssl_cnf = os.path.join(d['--dir'], CA_OPENSSL_CNF_NAME)
 
     if not forceYN and os.path.exists(ca_cert):
         sys.stderr.write("""\
@@ -256,21 +263,6 @@ ERROR: a CA public certificate already exists:
        If you wish to generate a new one, use the --force option.
 """ % ca_cert)
         sys.exit(errnoGeneralError)
-
-    dependencyCheck(ca_key)
-
-    passwordCheck(password)
-
-
-def genPublicCaCert(password, d, verbosity=0, forceYN=0):
-    """ public CA certificate (client-side) generation """
-
-    ca_key = os.path.join(d['--dir'], os.path.basename(d['--ca-key']))
-    ca_cert_name = os.path.basename(d['--ca-cert'])
-    ca_cert = os.path.join(d['--dir'], ca_cert_name)
-    ca_openssl_cnf = os.path.join(d['--dir'], CA_OPENSSL_CNF_NAME)
-
-    genPublicCaCert_dependencies(password, d, forceYN)
 
     configFile = ConfigFile(ca_openssl_cnf)
     if '--set-hostname' in d:
@@ -846,7 +838,6 @@ def _main():
             genPrivateCaKey(getCAPassword(options), DEFS,
                             options.verbose, options.force)
         elif getOption(options, 'cert_only'):
-            genPublicCaCert_dependencies(getCAPassword(options), DEFS, options.force)
             genPublicCaCert(getCAPassword(options), DEFS,
                             options.verbose, options.force)
         elif getOption(options, 'rpm_only'):
