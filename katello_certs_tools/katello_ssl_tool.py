@@ -380,7 +380,7 @@ def genServerKey(d, verbosity=0):
     os.chmod(server_key, 0o600)
 
 
-def genServerCertReq_dependencies(d):
+def genServerCertReq(d, verbosity=0):
     """ private server cert request generation """
 
     serverKeyPairDir = os.path.join(d['--dir'],
@@ -391,20 +391,10 @@ def genServerCertReq_dependencies(d):
                               os.path.basename(d['--server-key']))
     dependencyCheck(server_key)
 
-
-def genServerCertReq(d, verbosity=0):
-    """ private server cert request generation """
-
-    serverKeyPairDir = os.path.join(d['--dir'],
-                                    d['--set-hostname'])
-    server_key = os.path.join(serverKeyPairDir,
-                              os.path.basename(d['--server-key']))
     server_cert_req = os.path.join(serverKeyPairDir,
                                    os.path.basename(d['--server-cert-req']))
     server_openssl_cnf = os.path.join(serverKeyPairDir,
                                       SERVER_OPENSSL_CNF_NAME)
-
-    genServerCertReq_dependencies(d)
 
     # XXX: hmm.. should private_key, etc. be set for this before the write?
     #      either that you pull the key/certs from the files all together?
@@ -895,7 +885,6 @@ def _main():
         if getOption(options, 'key_only'):
             genServerKey(DEFS, options.verbose)
         elif getOption(options, 'cert_req_only'):
-            genServerCertReq_dependencies(DEFS)
             genServerCertReq(DEFS, options.verbose)
         elif getOption(options, 'cert_only'):
             genServerCert_dependencies(getCAPassword(options, confirmYN=0), DEFS)
