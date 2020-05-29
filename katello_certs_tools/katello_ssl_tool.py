@@ -449,17 +449,14 @@ def genServerCertReq(d, verbosity=0):
 def genServerCert(password, d, verbosity=0):
     """ server cert generation and signing """
 
-    passwordCheck(password)
+    genServerCert_dependencies(password, d)
 
     serverKeyPairDir = os.path.join(d['--dir'],
                                     d['--set-hostname'])
     gendir(serverKeyPairDir)
 
     ca_key = os.path.join(d['--dir'], os.path.basename(d['--ca-key']))
-    dependencyCheck(ca_key)
-
     ca_cert = os.path.join(d['--dir'], os.path.basename(d['--ca-cert']))
-    dependencyCheck(ca_cert)
 
     server_cert_req = os.path.join(serverKeyPairDir,
                                    os.path.basename(d['--server-cert-req']))
@@ -812,7 +809,7 @@ Deploy the server's SSL key pair/set RPM:
     return "%s.noarch.rpm" % serverRpmName
 
 
-def genServer_dependencies(password, d):
+def genServerCert_dependencies(password, d):
     """ deps for the general --gen-server command.
         I.e., generation of server.{key,csr,crt}.
     """
@@ -860,10 +857,11 @@ def _main():
         elif getOption(options, 'rpm_only'):
             genServerRpm(DEFS, options.verbose)
         else:
-            genServer_dependencies(getCAPassword(options, confirmYN=0), DEFS)
+            ca_password = getCAPassword(options, confirmYN=0)
+            genServerCert_dependencies(ca_password, DEFS)
             genServerKey(DEFS, options.verbose)
             genServerCertReq(DEFS, options.verbose)
-            genServerCert(getCAPassword(options, confirmYN=0), DEFS, options.verbose)
+            genServerCert(ca_password, DEFS, options.verbose)
             if not getOption(options, 'no_rpm'):
                 genServerRpm(DEFS, options.verbose)
 
