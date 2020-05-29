@@ -584,25 +584,18 @@ def _reenableRpmMacros():
         os.rename(macTmp, mac)
 
 
-def genCaRpm_dependencies(d):
-    """ generates ssl cert RPM. """
-
-    gendir(d['--dir'])
-    ca_cert_name = os.path.basename(d['--ca-cert'])
-    ca_cert = os.path.join(d['--dir'], ca_cert_name)
-    dependencyCheck(ca_cert)
-
-
 def genCaRpm(d, verbosity=0):
     """ generates ssl cert RPM. """
 
     ca_cert_path = d['--ca-cert-dir']
     ca_cert_name = os.path.basename(d['--ca-cert'])
     ca_cert = os.path.join(d['--dir'], ca_cert_name)
+    gendir(d['--dir'])
+    dependencyCheck(ca_cert)
+
     ca_cert_rpm_name = os.path.basename(d['--ca-cert-rpm'])
     ca_cert_rpm = os.path.join(d['--dir'], ca_cert_rpm_name)
 
-    genCaRpm_dependencies(d)
     appendOtherCACerts(d, ca_cert)
 
     if verbosity >= 0:
@@ -857,7 +850,6 @@ def _main():
             genPublicCaCert(getCAPassword(options), DEFS,
                             options.verbose, options.force)
         elif getOption(options, 'rpm_only'):
-            genCaRpm_dependencies(DEFS)
             genCaRpm(DEFS, options.verbose)
         else:
             genPrivateCaKey(getCAPassword(options), DEFS,
