@@ -33,7 +33,6 @@
 #
 
 
-from __future__ import print_function
 from time import time
 
 
@@ -54,11 +53,3 @@ def secs2days(secs):
 def secs2years(secs):
     "an approximation"
     return round(secs/YEAR)
-
-
-def _test():
-    print('Right now, in seconds (epoch): ', now())
-
-
-if __name__ == '__main__':
-    _test()
