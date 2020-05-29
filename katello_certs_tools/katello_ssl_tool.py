@@ -102,6 +102,12 @@ def dependencyCheck(filename):
         raise FailedFileDependencyException(filename)
 
 
+def passwordCheck(password):
+    if password is None:
+        sys.stderr.write('ERROR: a CA password must be supplied.\n')
+        sys.exit(errnoGeneralError)
+
+
 def pathJoin(path, filename):
     filename = os.path.basename(filename)
     return os.path.join(path, filename)
@@ -253,9 +259,7 @@ ERROR: a CA public certificate already exists:
 
     dependencyCheck(ca_key)
 
-    if password is None:
-        sys.stderr.write('ERROR: a CA password must be supplied.\n')
-        sys.exit(errnoGeneralError)
+    passwordCheck(password)
 
 
 def genPublicCaCert(password, d, verbosity=0, forceYN=0):
@@ -452,9 +456,7 @@ def genServerCertReq(d, verbosity=0):
 def genServerCert_dependencies(password, d):
     """ server cert generation and signing dependency check """
 
-    if password is None:
-        sys.stderr.write('ERROR: a CA password must be supplied.\n')
-        sys.exit(errnoGeneralError)
+    passwordCheck(password)
 
     serverKeyPairDir = os.path.join(d['--dir'],
                                     d['--set-hostname'])
@@ -852,9 +854,7 @@ def genServer_dependencies(password, d):
     dependencyCheck(ca_key)
     dependencyCheck(ca_cert)
 
-    if password is None:
-        sys.stderr.write('ERROR: a CA password must be supplied.\n')
-        sys.exit(errnoGeneralError)
+    passwordCheck(password)
 
 
 def _main():
