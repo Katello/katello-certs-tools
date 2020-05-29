@@ -720,8 +720,8 @@ Make the public CA certficate publically available:
     return '%s.noarch.rpm' % clientRpmName
 
 
-def genServerRpm_dependencies(d):
-    """ generates server's SSL key set RPM - dependencies check """
+def genServerRpm(d, verbosity=0):
+    """ generates server's SSL key set RPM """
 
     serverKeyPairDir = os.path.join(d['--dir'],
                                     d['--set-hostname'])
@@ -729,32 +729,15 @@ def genServerRpm_dependencies(d):
 
     server_key_name = os.path.basename(d['--server-key'])
     server_key = os.path.join(serverKeyPairDir, server_key_name)
-
-    server_cert_name = os.path.basename(d['--server-cert'])
-    server_cert = os.path.join(serverKeyPairDir, server_cert_name)
-
-    server_cert_req_name = os.path.basename(d['--server-cert-req'])
-    server_cert_req = os.path.join(serverKeyPairDir, server_cert_req_name)
-
     dependencyCheck(server_key)
-    dependencyCheck(server_cert)
-    dependencyCheck(server_cert_req)
-
-
-def genServerRpm(d, verbosity=0):
-    """ generates server's SSL key set RPM """
-
-    serverKeyPairDir = os.path.join(d['--dir'],
-                                    d['--set-hostname'])
-
-    server_key_name = os.path.basename(d['--server-key'])
-    server_key = os.path.join(serverKeyPairDir, server_key_name)
 
     server_cert_name = os.path.basename(d['--server-cert'])
     server_cert = os.path.join(serverKeyPairDir, server_cert_name)
+    dependencyCheck(server_cert)
 
     server_cert_req_name = os.path.basename(d['--server-cert-req'])
     server_cert_req = os.path.join(serverKeyPairDir, server_cert_req_name)
+    dependencyCheck(server_cert_req)
 
     server_rpm_name = os.path.basename(d['--server-rpm'])
     server_rpm = os.path.join(serverKeyPairDir, server_rpm_name)
@@ -762,8 +745,6 @@ def genServerRpm(d, verbosity=0):
     server_cert_dir = d['--server-cert-dir']
 
     postun_scriptlet = os.path.join(d['--dir'], 'postun.scriptlet')
-
-    genServerRpm_dependencies(d)
 
     if verbosity >= 0:
         sys.stderr.write("\n...working...\n")
@@ -920,7 +901,6 @@ def _main():
             genServerCert_dependencies(getCAPassword(options, confirmYN=0), DEFS)
             genServerCert(getCAPassword(options, confirmYN=0), DEFS, options.verbose)
         elif getOption(options, 'rpm_only'):
-            genServerRpm_dependencies(DEFS)
             genServerRpm(DEFS, options.verbose)
         else:
             genServer_dependencies(getCAPassword(options, confirmYN=0), DEFS)
