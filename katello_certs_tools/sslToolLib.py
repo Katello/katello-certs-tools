@@ -28,6 +28,7 @@ from katello_certs_tools.timeLib import DAY, now, secs2days, secs2years
 
 class KatelloSslToolException(Exception):
     """ general exception class for the tool """
+    code = 100
 
 
 errnoGeneralError = 1

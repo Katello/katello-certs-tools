@@ -60,30 +60,37 @@ from katello_certs_tools.sslToolConfig import ConfigFile, figureSerial, getOptio
 
 class GenPrivateCaKeyException(KatelloSslToolException):
     """ private CA key generation error """
+    code = 10
 
 
 class GenPublicCaCertException(KatelloSslToolException):
     """ public CA cert generation error """
+    code = 11
 
 
 class GenServerKeyException(KatelloSslToolException):
     """ private server key generation error """
+    code = 20
 
 
 class GenServerCertReqException(KatelloSslToolException):
     """ server cert request generation error """
+    code = 21
 
 
 class GenServerCertException(KatelloSslToolException):
     """ server cert generation error """
+    code = 22
 
 
 class GenCaCertRpmException(KatelloSslToolException):
     """ CA public certificate RPM generation error """
+    code = 12
 
 
 class GenServerRpmException(KatelloSslToolException):
     """ server RPM generation error """
+    code = 23
 
 
 class FailedFileDependencyException(Exception):
@@ -948,57 +955,21 @@ def main():
         100  general RHN SSL tool error
     """
 
-    def writeError(e):
-        sys.stderr.write('\nERROR: %s\n' % e)
-
     try:
         _main()
         ret = 0
-    # CA key set errors
-    except GenPrivateCaKeyException as e:
-        writeError(e)
-        ret = 10
-    except GenPublicCaCertException as e:
-        writeError(e)
-        ret = 11
-    except GenCaCertRpmException as e:
-        writeError(e)
-        ret = 12
-    # server key set errors
-    except GenServerKeyException as e:
-        writeError(e)
-        ret = 20
-    except GenServerCertReqException as e:
-        writeError(e)
-        ret = 21
-    except GenServerCertException as e:
-        writeError(e)
-        ret = 22
-    except GenServerRpmException as e:
-        writeError(e)
-        ret = 23
-    # other errors
-    except CertExpTooShortException as e:
-        writeError(e)
-        ret = 30
-    except CertExpTooLongException as e:
-        writeError(e)
-        ret = 31
-    except InvalidCountryCodeException as e:
-        writeError(e)
-        ret = 32
     except FailedFileDependencyException as e:
         # already wrote a nice error message
-        msg = """\
-can't find a file that should have been created during an earlier step:
+        msg = """
+ERROR: can't find a file that should have been created during an earlier step:
        %s
 
        %s --help""" % (e, os.path.basename(sys.argv[0]))
-        writeError(msg)
+        sys.stderr.write(msg)
         ret = 33
     except KatelloSslToolException as e:
-        writeError(e)
-        ret = 100
+        sys.stderr.write('\nERROR: %s\n' % e)
+        ret = e.code
     except KeyboardInterrupt:
         sys.stderr.write("\nUser interrupted process.\n")
         ret = 0
