@@ -85,10 +85,6 @@ class GenServerRpmException(KatelloSslToolException):
     """ server RPM generation error """
 
 
-class GenServerTarException(KatelloSslToolException):
-    """ server tar archive generation error """
-
-
 class FailedFileDependencyException(Exception):
     """ missing a file needed for this step """
 
