@@ -697,42 +697,6 @@ Make the public CA certficate publically available:
     return '%s.noarch.rpm' % clientRpmName
 
 
-def getTarballFilename(d, version='1.0', release='1'):
-    """ figure out the current and next tar archive filename
-        returns current, next (current can be None)
-    """
-
-    serverKeySetDir = pathJoin(d['--dir'], d['--set-hostname'])
-    server_tar_name = pathJoin(serverKeySetDir, d['--server-tar'])
-
-    filenames = glob.glob("%s-%s-*.tar" % (server_tar_name, version))
-    filenames.sort()  # tested to be reliable
-
-    versions = list(map(lambda x, n=len(server_tar_name): x[n+1:-4], filenames))
-    versions.sort()
-
-    current = None
-    if filenames:
-        current = filenames[-1]
-
-    next_name = "%s-%s-1.tar" % (server_tar_name, version)
-    if current:
-        v = versions[-1].split('-')
-        v[-1] = str(int(v[-1])+1)
-        next_name = "%s-%s.tar" % (server_tar_name, '-'.join(v))
-        current = os.path.basename(current)
-
-    # incoming release (usually coming from RPM version) is factored in
-    # ...if RPM version-release is greater then that is used.
-    v = next_name[len(server_tar_name)+1:-4]
-    v = v.split('-')
-    v[-1] = str(max(int(v[-1]), int(release)))
-    next_name = "%s-%s.tar" % (server_tar_name, '-'.join(v))
-    next_name = os.path.basename(next_name)
-
-    return current, next_name
-
-
 def genServerRpm_dependencies(d):
     """ generates server's SSL key set RPM - dependencies check """
 
