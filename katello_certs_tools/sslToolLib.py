@@ -58,25 +58,6 @@ def fixSerial(serial):
     return serial
 
 
-def incSerial(serial):
-    """ increment a serial hex number """
-
-    if not serial:
-        serial = '00'
-
-    if serial.find('0x') == -1:
-        serial = '0x'+serial
-
-    # the string might have a trailing L
-    serial = serial.replace('L', '')
-
-    serial = int(serial, 16) + 1
-    serial = hex(serial)
-
-    serial = serial.split('x')[-1]
-    return fixSerial(serial)
-
-
 #
 # NOTE: the Unix epoch overflows at: 2038-01-19 03:14:07 (2^31 seconds)
 #
