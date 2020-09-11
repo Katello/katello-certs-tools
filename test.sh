@@ -32,6 +32,7 @@ $PYTHON setup.py install
 
 for filename in tests/* ; do
 	if [[ -x $filename ]] ; then
+		echo "=== TEST: $filename ==="
 		$filename
 	else
 		echo "File $filename is not executable"
