@@ -27,7 +27,7 @@ import socket
 
 # local imports
 from katello_certs_tools.fileutils import cleanupNormPath, rotateFile, rhn_popen, cleanupAbsPath
-from katello_certs_tools.sslToolLib import daysTil18Jan2038, incSerial, fixSerial
+from katello_certs_tools.sslToolLib import daysTil18Jan2038, fixSerial
 
 
 # defaults where we can see them (NOTE: directory is figured at write time)
@@ -502,8 +502,7 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     # REMEMBER: openssl will incremented the serial number each time
     # as well.
     if serial <= caSerial:
-        serial = incSerial(hex(caSerial))
-        serial = int('0x' + serial, 16)
+        serial = caSerial + 1
     serial = fixSerial(hex(serial))
 
     # create the serial file if it doesn't exist
