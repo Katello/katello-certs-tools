@@ -67,7 +67,10 @@ def incSerial(serial):
     if serial.find('0x') == -1:
         serial = '0x'+serial
 
-    serial = eval(serial) + 1
+    # the string might have a trailing L
+    serial = serial.replace('L', '')
+
+    serial = int(serial, 16) + 1
     serial = hex(serial)
 
     serial = serial.split('x')[-1]
