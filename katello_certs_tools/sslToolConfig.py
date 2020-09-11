@@ -486,7 +486,7 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     caSerial = out.strip().split('=')
     assert len(caSerial) > 1
     caSerial = caSerial[1]
-    caSerial = eval('0x'+caSerial)
+    caSerial = int('0x'+caSerial, 16)
 
     # initialize the serial value (starting at whatever is in
     # serialFilename or 1)
@@ -494,7 +494,7 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     if os.path.exists(serialFilename):
         serial = open(serialFilename, 'r').read().strip()
         if serial:
-            serial = eval('0x'+serial)
+            serial = int('0x'+serial, 16)
         else:
             serial = 1
 
@@ -503,7 +503,7 @@ def figureSerial(caCertFilename, serialFilename, indexFilename):
     # as well.
     if serial <= caSerial:
         serial = incSerial(hex(caSerial))
-        serial = eval('0x' + serial)
+        serial = int('0x' + serial, 16)
     serial = fixSerial(hex(serial))
 
     # create the serial file if it doesn't exist
