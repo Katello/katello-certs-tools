@@ -238,7 +238,7 @@ def genPublicCaCert(password, d, verbosity=0, forceYN=0):
         del d['--set-hostname']
     configFile.save(d, caYN=1, verbosity=verbosity)
 
-    args = ("/usr/bin/openssl req -passin pass:%s -text -config %s "
+    args = ("/usr/bin/openssl req -passin pass:%s -config %s "
             "-new -x509 -days %s -%s -key %s -out %s"
             % ('%s', repr(cleanupAbsPath(configFile.filename)),
                repr(d['--cert-expiration']),
@@ -377,7 +377,7 @@ def genServerCertReq(d, verbosity=0):
     configFile.save(d, caYN=0, verbosity=verbosity)
 
     # generate the server cert request
-    args = ("/usr/bin/openssl req -%s -text -config %s -new -key %s -out %s "
+    args = ("/usr/bin/openssl req -%s -config %s -new -key %s -out %s "
             % (MD, repr(cleanupAbsPath(configFile.filename)),
                repr(cleanupAbsPath(server_key)),
                repr(cleanupAbsPath(server_cert_req))))
