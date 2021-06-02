@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='Katello Certs Tools',
-      version='2.7.3',
+      version='2.8.0',
       description='Python modules used for Katello SSL tooling',
       author='Tomas Lestach',
       author_email='tlestach@redhat.com',
