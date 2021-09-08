@@ -47,7 +47,7 @@ CA_OPENSSL_CNF_NAME = 'katello-ca-openssl.cnf'
 SERVER_OPENSSL_CNF_NAME = 'katello-server-openssl.cnf'
 
 MD = 'sha256'
-CRYPTO = '-des3'
+CRYPTO = '-aes256'
 
 
 def getOption(options, opt):
