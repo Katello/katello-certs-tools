@@ -611,8 +611,12 @@ def genCaRpm(d, verbosity=0):
 
     ver, rel = '1.0', '0'
     if hdr is not None:
-        ver = str(hdr['version'].decode('utf-8'))
-        rel = str(hdr['release'].decode('utf-8'))
+        try:
+            ver = str(hdr['version'].decode('utf-8'))
+            rel = str(hdr['release'].decode('utf-8'))
+        except AttributeError:
+            ver = str(hdr['version'])
+            rel = str(hdr['release'])
 
     # bump the release - and let's not be too smart about it
     #                    assume the release is a number.
@@ -759,8 +763,12 @@ def genServerRpm(d, verbosity=0):
 
     ver, rel = '1.0', '0'
     if hdr is not None:
-        ver = str(hdr['version'].decode('utf-8'))
-        rel = str(hdr['release'].decode('utf-8'))
+        try:
+            ver = str(hdr['version'].decode('utf-8'))
+            rel = str(hdr['release'].decode('utf-8'))
+        except AttributeError:
+            ver = str(hdr['version'])
+            rel = str(hdr['release'])
 
     # bump the release - and let's not be too smart about it
     #                    assume the release is a number.

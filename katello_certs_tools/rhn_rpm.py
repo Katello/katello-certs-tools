@@ -75,8 +75,8 @@ class RPM_Header:
 
     def checksum_type(self):
         if self.hdr[rpm.RPMTAG_FILEDIGESTALGO] \
-           and self.hdr[rpm.RPMTAG_FILEDIGESTALGO].decode('utf-8') in PGPHASHALGO:
-            checksum_type = PGPHASHALGO[self.hdr[rpm.RPMTAG_FILEDIGESTALGO]]
+           and int(self.hdr[rpm.RPMTAG_FILEDIGESTALGO]) in PGPHASHALGO:
+            checksum_type = PGPHASHALGO[int(self.hdr[rpm.RPMTAG_FILEDIGESTALGO])]
         else:
             checksum_type = 'md5'
         return checksum_type
@@ -178,8 +178,12 @@ def hdrLabelCompare(hdr1, hdr2):
     """ take two RPMs or headers and compare them for order """
 
     if hdr1['name'] == hdr2['name']:
-        hdr1 = [hdr1['epoch'], hdr1['version'].decode('utf-8'), hdr1['release'].decode('utf-8')]
-        hdr2 = [hdr2['epoch'], hdr2['version'].decode('utf-8'), hdr2['release'].decode('utf-8')]
+        try:
+            hdr1 = [hdr1['epoch'], hdr1['version'].decode('utf-8'), hdr1['release'].decode('utf-8')]
+            hdr2 = [hdr2['epoch'], hdr2['version'].decode('utf-8'), hdr2['release'].decode('utf-8')]
+        except AttributeError:
+            hdr1 = [hdr1['epoch'], hdr1['version'], hdr1['release']]
+            hdr2 = [hdr2['epoch'], hdr2['version'], hdr2['release']]
         if hdr1[0]:
             hdr1[0] = str(hdr1[0])
         if hdr2[0]:
