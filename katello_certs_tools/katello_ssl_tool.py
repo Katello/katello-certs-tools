@@ -754,7 +754,7 @@ def genServerRpm(d, verbosity=0):
 
     server_cert_dir = d['--server-cert-dir']
 
-    postun_scriptlet = os.path.join(d['--dir'], 'postun.scriptlet')
+    postun_scriptlet = os.path.join(d['--dir'], d['--set-hostname'], 'postun.scriptlet')
 
     genServerRpm_dependencies(d)
 
