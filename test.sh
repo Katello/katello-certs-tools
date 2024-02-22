@@ -10,15 +10,14 @@ PYTHON=python3
 if [[ "${TEST_ON_EL}" == "true" ]]; then
   . /etc/os-release
   if [[ $VERSION_ID == 8 ]] ; then
-    # TODO: where's docbook-utils on EL8?
-    PACKAGES=""
+    REPOS="--enablerepo=powertools"
     # This is where Python 3 on EL8 installs packages to
     mkdir -p /usr/local/lib/python3.6/site-packages
   elif [[ $VERSION_ID == 9 ]] ; then
-    PACKAGES="docbook-utils"
+    REPOS=""
   fi
 
-  dnf install -y openssl rpm-build tree python3 python3-setuptools $PACKAGES
+  dnf install ${REPOS} -y openssl rpm-build tree python3 python3-setuptools docbook-utils
 fi
 
 if [[ -x /usr/bin/docbook2man ]] ; then
