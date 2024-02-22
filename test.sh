@@ -17,7 +17,7 @@ if [[ "${TEST_ON_EL}" == "true" ]]; then
     REPOS=""
   fi
 
-  dnf install ${REPOS} -y openssl rpm-build tree python3 python3-setuptools docbook-utils
+  dnf install ${REPOS} -y openssl rpm-build tree python3 python3-setuptools docbook-utils glibc-langpack-en
 fi
 
 if [[ -x /usr/bin/docbook2man ]] ; then
