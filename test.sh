@@ -4,16 +4,13 @@ set -e
 
 export LC_ALL=en_US.UTF-8
 
-TEST_ON_EL=$([ -f /etc/redhat-release ] && [ -x /usr/bin/yum ] && echo "true" || echo "false")
 PYTHON=python3
 
-if [[ "${TEST_ON_EL}" == "true" ]]; then
+if [[ -f /etc/redhat-release ]]; then
   . /etc/os-release
   if [[ $VERSION_ID == 8 ]] ; then
     REPOS="--enablerepo=powertools"
-    # This is where Python 3 on EL8 installs packages to
-    mkdir -p /usr/local/lib/python3.6/site-packages
-  elif [[ $VERSION_ID == 9 ]] ; then
+  else
     REPOS=""
   fi
 
