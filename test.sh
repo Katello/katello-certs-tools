@@ -5,21 +5,20 @@ set -e
 export LC_ALL=en_US.UTF-8
 
 TEST_ON_EL=$([ -f /etc/redhat-release ] && [ -x /usr/bin/yum ] && echo "true" || echo "false")
-PYTHON=python
+PYTHON=python3
 
 if [[ "${TEST_ON_EL}" == "true" ]]; then
   . /etc/os-release
   if [[ $VERSION_ID == 8 ]] ; then
     # TODO: where's docbook-utils on EL8?
-    PACKAGES="python3 python3-setuptools"
-    PYTHON="python3"
+    PACKAGES=""
     # This is where Python 3 on EL8 installs packages to
     mkdir -p /usr/local/lib/python3.6/site-packages
-  elif [[ $VERSION_ID == 7 ]] ; then
-    PACKAGES="docbook-utils python-setuptools"
+  elif [[ $VERSION_ID == 9 ]] ; then
+    PACKAGES="docbook-utils"
   fi
 
-  yum install -y openssl rpm-build tree $PACKAGES
+  dnf install -y openssl rpm-build tree python3 python3-setuptools $PACKAGES
 fi
 
 if [[ -x /usr/bin/docbook2man ]] ; then
