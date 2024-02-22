@@ -240,7 +240,7 @@ TARBALL=$NAME-$VERSION.tar.gz
 echo "Building $NAME-$VERSION-$RELEASE.$ARCH.rpm"
 
 rm -rf $RPM_BUILD_DIR
-install --verbose -d $RPM_BUILD_DIR/$DIRNAME
+install --verbose -d $RPM_BUILD_DIR/$DIRNAME/root
 
 # Prepare the tar file
 i=0
@@ -248,27 +248,21 @@ while [ $i -lt ${#PARAMS[*]} ]; do
     echo ${PARAMS[$i]} | (
         IFS== read dstmod src
         echo ${dstmod} | (IFS=: read dst mod
-            echo "${src} -> ${RPM_BUILD_DIR}/${DIRNAME}/${dst}"
-            mkdir --parents --verbose ${RPM_BUILD_DIR}/${DIRNAME}/`dirname "${dst}"`; cp ${src} ${RPM_BUILD_DIR}/${DIRNAME}/${dst}
+            echo "${src} -> ${RPM_BUILD_DIR}/${DIRNAME}/root/${dst}"
+            if [ -d "$src" ] ; then
+                mkdir --parents --verbose ${RPM_BUILD_DIR}/${DIRNAME}/root/${dst}
+            else
+                dstdir=`dirname "${dst}"`
+                mkdir --parents --verbose ${RPM_BUILD_DIR}/${DIRNAME}/root/${dstdir}
+                cp ${src} ${RPM_BUILD_DIR}/${DIRNAME}/root/${dstdir}
+            fi
         )
     )
     i=$[$i+1]
 done
 
-# Build the install section
-installsect=`i=0
-while [ $i -lt ${#PARAMS[*]} ]; do
-    echo ${PARAMS[$i]} | (
-        IFS== read dstmod src
-        echo ${dstmod} | (IFS=: read dst mod
-            echo "install --verbose -d \\\$RPM_BUILD_ROOT\`dirname ${dst}\`"
-            echo "install --verbose .${dst} \\\$RPM_BUILD_ROOT${dst}")
-    )
-    i=$[$i+1]
-done | sort | uniq | while read line; do echo -n "$line\n"; done`
-
-# Build the file section
-filesect=`i=0
+# Build the files section
+filessect=`i=0
 while [ $i -lt ${#PARAMS[*]} ]; do
     echo ${PARAMS[$i]} | (
         IFS== read dstmod src
@@ -278,12 +272,18 @@ while [ $i -lt ${#PARAMS[*]} ]; do
             # NOTE there's already a %defattr(-,root,root), so if there's no u
             # or g defined, set it to '-' by default
             echo $mod | (IFS=, read m u g
-                echo "%attr(${m:-0644},${u:--},${g:--}) ${dst}"
+                if [ -d "$src" ] ; then
+                    echo "%dir %attr(${m:-0755},${u:--},${g:--}) ${dst}"
+                else
+                    echo "%attr(${m:-0644},${u:--},${g:--}) ${dst}"
+                fi
             )
         )
     )
     i=$[$i+1]
-done | sort | uniq | while read line; do echo -n "$line\n"; done`
+# "sort -k 1.2,1.2r" sorts lines that start with %dir above lines that start
+# with %attr, then sorts normally within those two groups of lines
+done | sort -k 1.2,1.2r | uniq | while read line; do echo -n "$line\n"; done`
 
 cat > $RPM_BUILD_DIR/$DIRNAME/$NAME.spec << EOF
 Name: $NAME
@@ -314,8 +314,8 @@ Vendor: $VENDOR
 
 %install
 rm -rf \$RPM_BUILD_ROOT
-install -d \$RPM_BUILD_ROOT
-`echo -e $installsect`
+install -d \`dirname \$RPM_BUILD_ROOT\`
+cp --verbose -R root \$RPM_BUILD_ROOT
 
 %clean
 rm -rf \$RPM_BUILD_ROOT
@@ -326,7 +326,7 @@ rm -rf \$RPM_BUILD_ROOT
 `generate_section "$PREUN" preun`
 
 %files
-`echo -e $filesect`
+`echo -e $filessect`
 EOF
 
 # Build the tarball
