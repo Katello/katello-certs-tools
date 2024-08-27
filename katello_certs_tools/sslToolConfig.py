@@ -375,14 +375,14 @@ authorityKeyIdentifier  = keyid, issuer:always
 [ req_server_x509_extensions ]
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, clientAuth
+extendedKeyUsage = serverAuth
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
 [ req_client_x509_extensions ]
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, clientAuth
+extendedKeyUsage = clientAuth
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 #===========================================================================
@@ -407,7 +407,7 @@ req_extensions          = v3_req
 [ req_server_x509_extensions ]
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, clientAuth
+extendedKeyUsage = serverAuth
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
