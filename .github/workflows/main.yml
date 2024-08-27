@@ -39,10 +39,23 @@ jobs:
       fail-fast: false
       matrix:
         centos:
-          - stream8
           - stream9
     container:
       image: quay.io/centos/centos:${{ matrix.centos }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run tests
+        run: ./test.sh
+
+  almalinux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        almalinux:
+          - 8
+    container:
+      image: almalinux:${{ matrix.almalinux }}
     steps:
       - uses: actions/checkout@v2
       - name: Run tests
