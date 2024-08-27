@@ -370,8 +370,6 @@ basicConstraints = CA:true
 keyUsage = digitalSignature, keyEncipherment, keyCertSign, cRLSign
 extendedKeyUsage = serverAuth, clientAuth
 nsCertType = server, sslCA
-# PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate"
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
@@ -380,8 +378,6 @@ basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
 nsCertType = server
-# PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate"
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
@@ -390,8 +386,6 @@ basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
 nsCertType = client
-# PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate"
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 #===========================================================================
@@ -418,8 +412,6 @@ basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
 nsCertType = %s
-# PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate, got it?"
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
