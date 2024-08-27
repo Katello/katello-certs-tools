@@ -369,7 +369,6 @@ x509_extensions         = req_ca_x509_extensions
 basicConstraints = CA:true
 keyUsage = digitalSignature, keyEncipherment, keyCertSign, cRLSign
 extendedKeyUsage = serverAuth, clientAuth
-nsCertType = server, sslCA
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
@@ -377,7 +376,6 @@ authorityKeyIdentifier  = keyid, issuer:always
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
-nsCertType = server
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
@@ -385,7 +383,6 @@ authorityKeyIdentifier  = keyid, issuer:always
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
-nsCertType = client
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 #===========================================================================
@@ -411,7 +408,6 @@ req_extensions          = v3_req
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
-nsCertType = %s
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
@@ -709,7 +705,7 @@ serial                  = $dir/serial
               )
         else:
             openssl_cnf = CONF_TEMPLATE_SERVER \
-              % (gen_req_distinguished_name(rdn), d['--purpose'],  gen_req_alt_names(d, rdn['CN']))
+              % (gen_req_distinguished_name(rdn), gen_req_alt_names(d, rdn['CN']))
 
         try:
             rotated = rotateFile(filepath=self.filename, verbosity=verbosity)
