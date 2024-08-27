@@ -369,29 +369,20 @@ x509_extensions         = req_ca_x509_extensions
 basicConstraints = CA:true
 keyUsage = digitalSignature, keyEncipherment, keyCertSign, cRLSign
 extendedKeyUsage = serverAuth, clientAuth
-nsCertType = server, sslCA
-# PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate"
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
 [ req_server_x509_extensions ]
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, clientAuth
-nsCertType = server
-# PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate"
+extendedKeyUsage = serverAuth
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
 [ req_client_x509_extensions ]
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, clientAuth
-nsCertType = client
-# PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate"
+extendedKeyUsage = clientAuth
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 #===========================================================================
@@ -416,10 +407,7 @@ req_extensions          = v3_req
 [ req_server_x509_extensions ]
 basicConstraints = CA:false
 keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, clientAuth
-nsCertType = %s
-# PKIX recommendations harmless if included in all certificates.
-nsComment               = "Katello SSL Tool Generated Certificate, got it?"
+extendedKeyUsage = serverAuth
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid, issuer:always
 
@@ -717,7 +705,7 @@ serial                  = $dir/serial
               )
         else:
             openssl_cnf = CONF_TEMPLATE_SERVER \
-              % (gen_req_distinguished_name(rdn), d['--purpose'],  gen_req_alt_names(d, rdn['CN']))
+              % (gen_req_distinguished_name(rdn), gen_req_alt_names(d, rdn['CN']))
 
         try:
             rotated = rotateFile(filepath=self.filename, verbosity=verbosity)

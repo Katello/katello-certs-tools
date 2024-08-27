@@ -8,7 +8,7 @@ PYTHON=python3
 
 if [[ -f /etc/redhat-release ]]; then
   . /etc/os-release
-  if [[ $VERSION_ID == 8 ]] ; then
+  if [[ $VERSION_ID == "8.10" ]] ; then
     REPOS="--enablerepo=powertools"
   else
     REPOS=""

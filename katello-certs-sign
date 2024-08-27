@@ -149,7 +149,6 @@ emailAddress		= optional
 [ usr_cert ]
 basicConstraints = CA:false
 extendedKeyUsage = serverAuth,clientAuth
-nsCertType = server
 keyUsage = digitalSignature, keyEncipherment
 
 # PKIX recommendations harmless if included in all certificates.
