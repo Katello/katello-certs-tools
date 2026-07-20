@@ -33,11 +33,13 @@
 # language imports
 from __future__ import print_function
 
+import fcntl
 import functools
 import getpass
 import glob
 import os
 import sys
+from contextlib import contextmanager
 
 # Package imports
 import rpm
@@ -158,6 +160,20 @@ def getCAPassword(options, confirmYN=1):
                 options.password = f.read()
 
     return options.password
+
+
+@contextmanager
+def ca_lock(d, verbosity=0):
+    lock_path = os.path.join(d['--dir'], '.katello-ssl-tool-ca.lock')
+    fd = open(lock_path, 'a')
+    try:
+        if verbosity > 1:
+            print("Waiting for lock on %s" % d['--dir'])
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        fd.close()
 
 
 def appendOtherCACerts(d, ca_cert):
@@ -894,14 +910,16 @@ def _main():
                             options.verbose, options.force)
         elif getOption(options, 'rpm_only'):
             genCaRpm_dependencies(DEFS)
-            genCaRpm(DEFS, options.verbose)
+            with ca_lock(DEFS, options.verbose):
+                genCaRpm(DEFS, options.verbose)
         else:
             genPrivateCaKey(getCAPassword(options), DEFS,
                             options.verbose, options.force)
             genPublicCaCert(getCAPassword(options), DEFS,
                             options.verbose, options.force)
             if not getOption(options, 'no_rpm'):
-                genCaRpm(DEFS, options.verbose)
+                with ca_lock(DEFS, options.verbose):
+                    genCaRpm(DEFS, options.verbose)
 
     if getOption(options, 'gen_server') or getOption(options, 'gen_client'):
         if getOption(options, 'key_only'):
@@ -910,18 +928,23 @@ def _main():
             genServerCertReq_dependencies(DEFS)
             genServerCertReq(DEFS, options.verbose)
         elif getOption(options, 'cert_only'):
-            genServerCert_dependencies(getCAPassword(options, confirmYN=0), DEFS)
-            genServerCert(getCAPassword(options, confirmYN=0), DEFS, options.verbose)
+            password = getCAPassword(options, confirmYN=0)
+            genServerCert_dependencies(password, DEFS)
+            with ca_lock(DEFS, options.verbose):
+                genServerCert(password, DEFS, options.verbose)
         elif getOption(options, 'rpm_only'):
             genServerRpm_dependencies(DEFS)
-            genServerRpm(DEFS, options.verbose)
+            with ca_lock(DEFS, options.verbose):
+                genServerRpm(DEFS, options.verbose)
         else:
-            genServer_dependencies(getCAPassword(options, confirmYN=0), DEFS)
+            password = getCAPassword(options, confirmYN=0)
+            genServer_dependencies(password, DEFS)
             genServerKey(DEFS, options.verbose)
             genServerCertReq(DEFS, options.verbose)
-            genServerCert(getCAPassword(options, confirmYN=0), DEFS, options.verbose)
-            if not getOption(options, 'no_rpm'):
-                genServerRpm(DEFS, options.verbose)
+            with ca_lock(DEFS, options.verbose):
+                genServerCert(password, DEFS, options.verbose)
+                if not getOption(options, 'no_rpm'):
+                    genServerRpm(DEFS, options.verbose)
 
 
 def main():
