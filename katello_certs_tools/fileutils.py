@@ -14,11 +14,8 @@
 #
 
 import os
-import select
 import shutil
-import subprocess
 import sys
-import tempfile
 
 
 def _file_contents_match(first, second):
@@ -145,80 +142,3 @@ def rotateFile(filepath, depth=5, suffix='.', verbosity=0):
 
     # return the full filepath of the backed up file
     return pathNSuffix1
-
-
-def rhn_popen(cmd, progressCallback=None, bufferSize=16384, outputLog=None):
-    """ popen-like function, that accepts execvp-style arguments too (i.e. an
-        array of params, thus making shell escaping unnecessary)
-
-        cmd can be either a string (like "ls -l /dev"), or an array of
-        arguments ["ls", "-l", "/dev"]
-
-        Returns the command's error code, a stream with stdout's contents
-        and a stream with stderr's contents
-
-        progressCallback --> progress bar twiddler
-        outputLog --> optional log file file object write method
-    """
-    cmd_is_list = isinstance(cmd, list) or isinstance(cmd, tuple)
-    if cmd_is_list:
-        cmd = map(str, cmd)
-    c = subprocess.Popen(cmd, bufsize=0, stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                         close_fds=True, shell=(not cmd_is_list))
-
-    # We don't write to the child process
-    c.stdin.close()
-
-    # Create two temporary streams to hold the info from stdout and stderr
-    child_out = tempfile.TemporaryFile(prefix='/tmp/my-popen-', mode='r+b')
-    child_err = tempfile.TemporaryFile(prefix='/tmp/my-popen-', mode='r+b')
-
-    # Map the input file descriptor with the temporary (output) one
-    fd_mappings = [(c.stdout, child_out), (c.stderr, child_err)]
-    exitcode = None
-    count = 1
-
-    while 1:
-        # Is the child process done?
-        status = c.poll()
-        if status is not None:
-            if status >= 0:
-                # Save the exit code, we still have to read from the pipes
-                exitcode = status
-            else:
-                # Some signal sent to this process
-                if outputLog is not None:
-                    outputLog("rhn_popen: Signal %s received\n" % (-status))
-                exitcode = status
-                break
-
-        fd_set = map(lambda x: x[0], fd_mappings)
-        readfds = select.select(fd_set, [], [])[0]
-
-        for in_fd, out_fd in fd_mappings:
-            if in_fd in readfds:
-                # There was activity on this file descriptor
-                output = os.read(in_fd.fileno(), bufferSize)
-                if output:
-                    # show progress
-                    if progressCallback:
-                        count = count + len(output)
-                        progressCallback(count)
-
-                    if outputLog is not None:
-                        outputLog(output)
-
-                    # write to the output buffer(s)
-                    out_fd.write(output)
-                    out_fd.flush()
-
-        if exitcode is not None:
-            # Child process is done
-            break
-
-    for f_in, f_out in fd_mappings:
-        f_in.close()
-        f_out.seek(0, 0)
-
-    return exitcode, child_out, child_err

@@ -353,14 +353,17 @@ def optionParse():
 
 class CertExpTooShortException(KatelloSslToolException):
     "certificate expiration must be at least 1 day"
+    code = 30
 
 
 class CertExpTooLongException(KatelloSslToolException):
     "cert expiration cannot be > 1 year before the 32-bit overflow (in days)"
+    code = 31
 
 
 class InvalidCountryCodeException(KatelloSslToolException):
     "invalid country code. Probably != 2 characters in length."
+    code = 32
 
 
 def processCommandline():
