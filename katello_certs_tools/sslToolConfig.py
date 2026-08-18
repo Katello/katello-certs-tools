@@ -441,15 +441,28 @@ subjectAltName          = @alt_names
 
 def gen_req_alt_names(d, hostname):
     """ generates the alt_names section of the *-openssl.cnf file """
-    i = 0
     result = ''
     dnsname = [hostname]
     if '--set-cname' in d and d['--set-cname']:
         dnsname.extend(d['--set-cname'])
-    for name in dnsname:
-        i += 1
-        result += "DNS.%d = %s\n" % (i, name)
+    for i, name in enumerate(dnsname):
+        if isIP(name):
+            result += "IP.%d = %s\n" % (i, name)
+        else:
+            result += "DNS.%d = %s\n" % (i, name)
     return result
+
+
+def isIP(name):
+    try:
+        socket.inet_pton(socket.AF_INET, name)
+        return True
+    except socket.error:
+        try:
+            socket.inet_pton(socket.AF_INET6, name)
+            return True
+        except socket.error:
+            return False
 
 
 def gen_req_distinguished_name(d):
