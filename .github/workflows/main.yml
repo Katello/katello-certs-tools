@@ -40,6 +40,7 @@ jobs:
       matrix:
         centos:
           - stream9
+          - stream10
     container:
       image: quay.io/centos/centos:${{ matrix.centos }}
     steps:
@@ -53,7 +54,7 @@ jobs:
       fail-fast: false
       matrix:
         almalinux:
-          - 8
+          - 9
     container:
       image: almalinux:${{ matrix.almalinux }}
     steps:
