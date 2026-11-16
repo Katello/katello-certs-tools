@@ -17,7 +17,7 @@ jobs:
           - "3.8"
           - "3.9"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -43,7 +43,7 @@ jobs:
     container:
       image: quay.io/centos/centos:${{ matrix.centos }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Run tests
         run: ./test.sh
 
@@ -57,6 +57,6 @@ jobs:
     container:
       image: almalinux:${{ matrix.almalinux }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Run tests
         run: ./test.sh
